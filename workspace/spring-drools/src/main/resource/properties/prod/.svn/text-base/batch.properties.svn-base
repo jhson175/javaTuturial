@@ -1,0 +1,461 @@
+#Tebero DB
+tibero.jdbc.driver=com.tmax.tibero.jdbc.TbDriver
+tibero.jdbc.url=jdbc:tibero:thin:@(description=(failover=on)(load_balance=off)(address_list=(address=(host=10.10.10.214)(port=8629))(address=(host=10.10.10.215)(port=8629)))(DATABASE_NAME=tmpdb))
+tibero.jdbc.user=hvmvno
+tibero.jdbc.password=hvmvno2!
+
+
+batch.jdbc.driver=oracle.jdbc.driver.OracleDriver
+batch.jdbc.url=jdbc:oracle:thin:@(DESCRIPTION =(LOAD_BALANCE= YES)(FAILOVER= YES)(ADDRESS_LIST = (LOAD_BALANCE= YES)(FAILOVER= YES)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.10.10.209)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.10.10.213)(PORT = 1521)))(CONNECT_DATA = (SERVICE_NAME = MVNO)(FAILOVER_MODE = (TYPE = SESSION)(METHOD = BASIC)(RETRIES = 10)(DELAY = 1))))
+batch.jdbc.user=bchvmvno
+batch.jdbc.password=bchvmvno2!
+
+# CHAMP DATASOURCE For PRODUCT
+champ.jdbc.driver=oracle.jdbc.driver.OracleDriver
+champ.jdbc.url=jdbc:oracle:thin:@(DESCRIPTION =(LOAD_BALANCE= YES)(FAILOVER= YES)(ADDRESS_LIST = (LOAD_BALANCE= YES)(FAILOVER= YES)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.10.10.209)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.10.10.213)(PORT = 1521)))(CONNECT_DATA = (SERVICE_NAME = MVNO)(FAILOVER_MODE = (TYPE = SESSION)(METHOD = BASIC)(RETRIES = 10)(DELAY = 1))))
+champ.jdbc.user=hvmvno
+champ.jdbc.password=hvmvno2!
+
+# TOPS DATASOURCE For (운영)
+tops.jdbc.driver=oracle.jdbc.driver.OracleDriver
+tops.jdbc.url=jdbc:oracle:thin:@10.10.10.163:1521:SMARTPD2
+tops.jdbc.user=cjhv_db_mvno
+tops.jdbc.password=cjmvno
+
+# VIEWING DATASOURCE For 운영
+viewing.jdbc.driver=oracle.jdbc.driver.OracleDriver
+viewing.jdbc.url=jdbc:oracle:thin:@10.10.10.152:1521:PROVDB
+viewing.jdbc.user=pvviewing
+viewing.jdbc.password=qbdld123!
+
+# GLS DATASOURCE For Dev
+gls.jdbc.driver=oracle.jdbc.driver.OracleDriver
+gls.jdbc.url=jdbc:oracle:thin:@210.98.159.153:1521:OPENDB
+gls.jdbc.user=cjhv
+gls.jdbc.password=cjhv!@#$
+
+# KAIT FTP 연동 (운영)
+kait.ftp.host=211.57.224.130
+kait.ftp.port=45921
+kait.ftp.user=cj_imei
+kait.ftp.password=cj@8955#
+kait.ftp.remoteDir=./
+kait.ftp.localDir=/home/HVMVNO/prod/commoninfraProd/WebContent/share/infra/kait
+
+
+##
+# SGI(보증보험) 연동
+#
+# sgi.host=대상IP
+# sgi.port=집중 포트
+# sgi.timeout=타임아웃
+# sgi.cmp_port=정산 포트
+# sgi.cmp_port2=정산 포트(신규)
+# sgi.cmp_timeout=정산 타임아웃
+##
+sgi.host=173.20.1.5
+# 영업 포트
+sgi.port=52030
+sgi.timeout=30000
+# 정산 포트
+sgi.cmp_port=52031
+sgi.cmp_port2=42475
+sgi.cmp_timeout=180000
+# 청구 포트
+sgi.dmnd.port=52068
+sgi.dmnd.timeout=30000
+# 청구 취소 포트 
+sgi.cncl.port=52255
+
+##
+# 단말분실보험
+#
+# hyndai.path=파일경로
+# hyndai.filename_pattern=파일패턴(1개의 일자 입력값을 받는다.)
+hyundai.path=/HVMVNO/prod/commoninfraProd/WebContent/share/infra/hyundai
+hyundai.filename_pattern={0}.dat
+
+
+#단말분실보험 현대 FTP
+#
+hyundai.ftp.host=52.33.171.224
+hyundai.ftp.port=22
+hyundai.ftp.user=hyundai
+hyundai.ftp.password=2hyundai2
+hyundai.ftp.remoteDir=/home/hyundai
+
+#KAIT 부정가입방지 진위확인 조회 2015.03.16 송유진
+kait.identvfy.out.host=211.57.224.140
+kait.identvfy.out.port=59100
+kait.identvfy.out.timeout=20000
+kait.identvfy.out.seedkey=RCJ591004268A101
+
+# CJ GLS
+cjgls.table.dlv=V_IFST_DLV_REQ_CJHELLO@GLS_DBLINK
+cjgls.table.trc=V_IFST_TRC_REQ_CJHELLO@GLS_DBLINK
+
+# MDRT DATASOURCE For Prod (운영환경)
+mdrt.jdbc.driver=Altibase.jdbc.driver.AltibaseDriver
+mdrt.jdbc.url=jdbc:Altibase://10.10.10.228:20300/mvnorat1
+mdrt.jdbc.user=hamvno
+mdrt.jdbc.password=hamvno2!
+
+#KT상품정보 기준경로
+ktProdInfoDir=/extsrc/mvuser/ktmp/prdc/
+#KT상품정보 기준경로(Backup)
+ktProdInfoBckDir=/extsrc/mvuser/ktmp/prdc/backup/
+cjgls.table.trc=V_IFST_TRC_REQ_CJHELLO@GLS_DBLINK
+
+#FTP FILE COUNSIL
+cnclInfoDir=/HVMVNO/prod/ftpFile/
+
+#FTP FILE COUNSIL
+cnclInfoBckDir=/HVMVNO/prod/ftpFile/back/
+
+# ERP DATASOURCE For PRODUCT
+erp.jdbc.driver=oracle.jdbc.driver.OracleDriver
+erp.jdbc.url=jdbc:oracle:thin:@10.10.10.213:1521:MVNO2
+erp.jdbc.user=CJHV_DB_MVNO
+erp.jdbc.password=cjmvno
+
+
+#배치결과 SMS발송대상
+batch.result.send.list=01085715655,01022663747,01041315728,01095000018,01082241030
+
+#삼성카드 제휴 발급전문 경로
+smcardUploadDir=/home/smcard/
+
+#COUPON UPLOAD DIR
+couponUploadDir=/HVMVNO/prod/commoninfraProd/WebContent/share/infra/coupon/
+
+# SGIC FTP FILE  2013.08.19
+sgicCnclInfoDir=/extsrc/mvuser/bill/recv/sgic/
+sgicCnclInfoBckDir=/extsrc/mvuser/bill/recv/sgic/back/
+
+# KISA FTP 연동
+kisa.ftp.host=211.233.86.88
+kisa.ftp.port=21
+kisa.ftp.user=cj02
+kisa.ftp.password=anti#-phishing-cj
+kisa.ftp.remoteDir=/WEBSMS_STOP/MVNO
+kisa.ftp.localDir=/HVMVNO/prod/commoninfraProd/WebContent/share/infra/kisa
+
+# KISA SFTP 연동
+kisa.sftp.host=211.115.79.107
+kisa.sftp.port=22
+kisa.sftp.user=cjhello
+kisa.sftp.password=kisa1234cjhello!@
+kisa.sftp.remoteDir=/WEBSMS_STOP/MVNO
+kisa.sftp.localDir=/HVMVNO/prod/commoninfraProd/WebContent/share/infra/kisa
+kisa.AES.key=d8b0f87d0e64916cd8c159b938ab2d272800cb539c1c2d4ebd54669410cab68b
+kisa.AES.iv=5663802a0b8bf5e23a79b80c93c3d066
+
+# KAIT 변동관리 연동(복지자격상실) 2014.09.18 김용욱
+kait.qlflost.host=211.57.224.185
+kait.qlflost.out.port=43100
+kait.qlflost.out.timeout=20000
+
+# KAIT 자격확인 연동 2014.10.01 김용욱
+kait.wlrfinq.out.host=211.57.224.185
+kait.wlrfinq.out.port=53101
+kait.wlrfinq.out.timeout=20000
+
+prov.prov.out.host=10.10.10.156
+prov.prov.out.port=13121
+prov.prov.out.timeout=20000
+
+##
+# CJ인터페이스게이트웨이(운영)
+#
+# cjifgw.host=대상IP
+# cjifgw.port=대상포트
+# cjifgw.timeout=타임아웃
+##
+cjifgw.host=10.10.10.156
+cjifgw.port=8301
+cjifgw.timeout=50000
+cjifgw.port.intl=8202
+
+# 통신영업보고서-상담 리포트 2015.01.29_이민영(mylee78)
+cnsl.report.localpath=/extsrc/mvuser/bill/send/report
+cnsl.report.filename_pattern=ALLOC1_MVNO{0}_{1}.txt
+
+# 통신영업보고서 REMOTE FTP 정보 
+sales.report.ftp.host=211.49.227.77
+sales.report.ftp.port=21
+sales.report.ftp.user=prem0412
+sales.report.ftp.password=qaz004438
+sales.report.ftp.remoteDir=/data
+
+
+#WEBFAX Server IP & PORT
+webfax.out.ip=52.32.211.144
+webfax.out.port=9808
+webfax.out.timeout=12000
+
+#단말재고이동
+stockmove.out.port=31060
+stockmove.out.host=172.23.15.54
+stockmove.out.timeout=20000
+
+#WMS DB for Dev
+wms.jdbc.driver=oracle.jdbc.driver.OracleDriver
+wms.jdbc.url=jdbc:oracle:thin:@52.2.11.75:1541:ifhub
+wms.jdbc.user=IF_V5
+wms.jdbc.password=kxif_v5@
+
+
+#재판매 정보
+resale.bizcd=MNOSK
+resale.crypto.key=CJHV
+
+resale.contract.file.input.directory=/MVNO/REV/CC06
+resale.contract.file.backup.directory=/MVNO/REV/BACKUP/CC06
+
+resale.contract.batchid=CTRT001
+resale.contract.regrid=MVNOBATCH
+resale.contract.remark=재판매 배치구분 - 가입정보
+resale.contract.add.filename=CC06.CJHV.FILEDATE.A1.DAT
+resale.contract.change.filename=CC06.CJHV.FILEDATE.CH.DAT
+resale.contract.remove.filename=CC06.CJHV.FILEDATE.Z1.DAT
+
+resale.productintegration.file.input.directory=/MVNO/REV/CC06
+resale.productintegration.file.backup.directory=/MVNO/REV/BACKUP/CC06
+resale.productintegration.batchid=PI001
+resale.productintegration.regrid=MVNOBATCH
+resale.productintegration.remark=재판매 배치구분 - 결합상품정보
+resale.productintegration.filename=CC06.CJHV.FILEDATE.CB.DAT
+
+resale.report.file.input.directory=/MVNO/REV/BS02
+resale.report.file.backup.directory=/MVNO/REV/BACKUP/BS02
+resale.report.01bill.batchid=REPORT001
+resale.report.01bill.regrid=MVNOBATCH
+resale.report.01bill.remark=재판매 배치구분 - 정기청구(매출) Data
+resale.report.01bill.filename=BS02.CJHV.INV.01.FILEDATE.DAT
+resale.report.02hotbill.batchid=REPORT002
+resale.report.02hotbill.regrid=MVNOBATCH
+resale.report.02hotbill.remark=재판매 배치구분 - Hot-bill Data
+resale.report.02hotbill.filename=BS02.CJHV.INV.01.FILEDATE.DAT
+resale.report.03adjust.batchid=REPORT003
+resale.report.03adjust.regrid=MVNOBATCH
+resale.report.03adjust.remark=재판매 배치구분 - 후조정 Data
+resale.report.03adjust.filename=BS02.CJHV.INV.02.FILEDATE.DAT
+resale.report.04pay.batchid=REPORT004
+resale.report.04pay.regrid=MVNOBATCH
+resale.report.04pay.remark=재판매 배치구분 - 수납
+resale.report.04pay.filename=BS02.CJHV.PAY.01.FILEDATE.DAT
+resale.report.05atpay.batchid=REPORT005
+resale.report.05atpay.regrid=MVNOBATCH
+resale.report.05atpay.remark=재판매 배치구분 - 자동이체수수료정산
+resale.report.05atpay.filename=BS02.CJHV.APA.01.FILEDATE.DAT
+resale.report.06tax.batchid=REPORT006
+resale.report.06tax.regrid=MVNOBATCH
+resale.report.06tax.remark=재판매 배치구분 - 부가세신고자료(법인)
+resale.report.06tax.filename=BS02.CJHV.FIN.01.FILEDATE.DAT
+resale.report.07insu.batchid=REPORT007
+resale.report.07insu.regrid=MVNOBATCH
+resale.report.07insu.remark=재판매 배치구분 - 보증보험
+resale.report.07insu.filename=BS02.CJHV.INS.01.FILEDATE.DAT
+resale.report.08evt.batchid=REPORT008
+resale.report.08evt.regrid=MVNOBATCH
+resale.report.08evt.remark=재판매 배치구분 - 이벤트 생성자료
+resale.report.08evt.filename=BS02.CJHV.COL.01.FILEDATE.DAT
+resale.report.09vrfc.batchid=REPORT009
+resale.report.09vrfc.regrid=MVNOBATCH
+resale.report.09vrfc.remark=재판매 배치구분 - 정기청구(검증) Data
+resale.report.09vrfc.filename=BS02.CJHV.INV.03.FILEDATE.DAT
+resale.report.10card.batchid=REPORT010
+resale.report.10card.regrid=MVNOBATCH
+resale.report.10card.remark=재판매 배치구분 - 카드자동이체신청내역
+resale.report.10card.filename=BS02.CJHV.APA.02.FILEDATE.DAT
+
+
+#재판매-유통,물류 정보
+resale.redist.file.input.directory=/MVNO/REV/EQP
+resale.redist.file.backup.directory=/MVNO/REV/BACKUP/EQP
+resale.redist.01phon.batchid=REDIST001
+resale.redist.01phon.regrid=CJHV
+resale.redist.01phon.remark=재판매 배치구분 - 단말모델정보
+resale.redist.01phon.filename=EQP1.CJHV.MDL_FILEDATE.DAT
+resale.redist.02distware.batchid=REDIST002
+resale.redist.02distware.regrid=CJHV
+resale.redist.02distware.remark=재판매 배치구분 - 물류재고대사정보
+resale.redist.02distware.filename=EQP1.CJHV.INVE_FILEDATE.DAT
+resale.redist.03distindtry.batchid=REDIST003
+resale.redist.03distindtry.regrid=CJHV
+resale.redist.03distindtry.remark=재판매 배치구분 - 물류제조사입고정보
+resale.redist.03distindtry.filename=EQP1.CJHV.INF_FILEDATE.DAT
+
+#재판매-정산 정보
+resale.accounts.file.input.directory=/MVNO/REV/WS00
+resale.accounts.file.backup.directory=/MVNO/REV/BACKUP/WS00
+resale.accounts.ws01.batchid=ACCOUNT001
+resale.accounts.ws01.regrid=MVNOBATCH
+resale.accounts.ws01.remark=정산 데이터 - 정액대가(후불)
+resale.accounts.ws01.filename=WS01.CJHV.FILEDATE.A.DAT
+resale.accounts.ws02.batchid=ACCOUNT002
+resale.accounts.ws02.regrid=MVNOBATCH
+resale.accounts.ws02.remark=정산 데이터 - 인프라이용대가(후불)
+resale.accounts.ws02.filename=WS02.CJHV.FILEDATE.A.DAT
+resale.accounts.ws03.batchid=ACCOUNT003
+resale.accounts.ws03.regrid=MVNOBATCH
+resale.accounts.ws03.remark=정산 데이터 - 유료부가서비스/와이파이(후불)
+resale.accounts.ws03.filename=WS03.CJHV.FILEDATE.A.DAT
+resale.accounts.ws04.batchid=ACCOUNT004
+resale.accounts.ws04.regrid=MVNOBATCH
+resale.accounts.ws04.remark=정산 데이터 - 종량통화량(후불)
+resale.accounts.ws04.filename=WS04.CJHV.FILEDATE.A.DAT
+resale.accounts.ws05.batchid=ACCOUNT005
+resale.accounts.ws05.regrid=MVNOBATCH
+resale.accounts.ws05.remark=정산 데이터 - 정액료(RS)(후불)
+resale.accounts.ws05.filename=WS05.CJHV.FILEDATE.A.DAT
+resale.accounts.ws06.batchid=ACCOUNT006
+resale.accounts.ws06.regrid=MVNOBATCH
+resale.accounts.ws06.remark=정산 데이터 - 인프라이용대가(RS)(후불)
+resale.accounts.ws06.filename=WS06.CJHV.FILEDATE.A.DAT
+resale.accounts.ws07.batchid=ACCOUNT007
+resale.accounts.ws07.regrid=MVNOBATCH
+resale.accounts.ws07.remark=정산 데이터 - 초과분(RS)/T map(RS)/무제한대가(RS)(후불)
+resale.accounts.ws07.filename=WS07.CJHV.FILEDATE.A.DAT
+
+#소액결제청구 자료
+resale.smallpay.file.input.directory=/MVNO/REV/BS03/REV
+resale.smallpay.file.backup.directory=/MVNO/REV/BACKUP/BS03/REV
+resale.smallpay.bs03rpe.batchid=SMPAY001
+resale.smallpay.bs03rpe.regrid=MVNOBATCH
+resale.smallpay.bs03rpe.remark=소액결제 과금 오류자료
+resale.smallpay.bs03rpe.filename=BS03.CJHV.FILEDATE.RPE.DAT
+resale.smallpay.bs03rpd.batchid=SMPAY002
+resale.smallpay.bs03rpd.regrid=MVNOBATCH
+resale.smallpay.bs03rpd.remark=소액결제 청구결과자료
+resale.smallpay.bs03rpd.filename=BS03.CJHV.FILEDATE.RPD.DAT
+
+#자동납부 승인결과
+resale.autopay.file.input.directory=/MVNO/REV/BS02
+resale.autopay.file.backup.directory=/MVNO/REV/BACKUP/BS02
+resale.autopay.apa03.batchid=AUTOPAY001
+resale.autopay.apa03.regrid=MVNOBATCH
+resale.autopay.apa03.remark=자동납부 승인결과
+resale.autopay.apa03.filename=BS02.CJHV.APA.03.FILEDATE.DAT
+
+#SKT 재판매 할인내역/할인오류분
+resale.discount.file.input.directory=/MVNO/REV/BS01/REV
+resale.discount.file.backup.directory=/MVNO/REV/BACKUP/BS01/REV
+resale.discount.bs01.batchid=DISCOUNT01
+resale.discount.bs01.regrid=CJHV
+resale.discount.bs01.remark=할인오류분/할인내역 송신전문
+resale.discount.bs01.filename1=BS01.CJHV.FILEDATE.RPE.DAT
+resale.discount.bs01.filename2=BS01.CJHV.FILEDATE.RPD.DAT
+
+#SKT 재판매 결합할인 - 할인대상 정보 송신 전문
+resale.discount.Target.host=10.10.10.238
+resale.discount.Target.port=21
+resale.discount.Target.user=cjm
+resale.discount.Target.password=candymftp
+resale.discount.Target.file.remoteDir=/BS01/SEN
+resale.discount.Target.file.path=/HVMVNO/prod/commoninfraProd/WebContent/share/infra/skt/bs01
+resale.discount.Target.fileName=BS01.CJHV.{0}.RG0.DAT
+
+#SKT 결제청구 요청 자료
+resale.payment.file.input.directory=/MVNO/REV/RV12
+resale.payment.file.backup.directory=/MVNO/REV/BACKUP/RV12
+resale.payment.rv12.batchid=PAYMENT01
+resale.payment.rv12.regrid=CJHV
+resale.payment.rv12.remark=결제청구 요청 자료
+resale.payment.rv12.filename=RV12.CJHV.FILEDATE.DAT
+
+#batchServerIP, 20151216, 보증보험 청구취소 프로젝트
+batchServerIP=10.10.10.224
+
+#KAIT 부정가입방지 대량(내국인,사업자) 일괄검증 2016.01.14 김진양
+kait.identvfy.sftp.localDirReq=/MVNO/KAIT/REQ/
+kait.identvfy.sftp.localDirRev=/MVNO/KAIT/REV/
+kait.identvfy.sftp.host=211.57.224.140
+kait.identvfy.sftp.port=20022
+kait.identvfy.sftp.userName=btxta101
+kait.identvfy.sftp.password=gpffh$qlwjs%101
+kait.identvfy.sftp.remoteDirPut=/{0}/putrq/
+kait.identvfy.sftp.remoteDirGet=/{0}/getrp/
+
+#SKT 과납원금 대체내역 2016.07.07 KHK
+resale.ovpay.file.input.directory=/MVNO/REV/BS02
+resale.ovpay.file.backup.directory=/MVNO/REV/BACKUP/BS02
+resale.ovpay.atl.batchid=OVPAY001
+resale.ovpay.atl.regrid=CJHV
+resale.ovpay.atl.remark=과납원금 대체내역
+resale.ovpay.atl.filename=BS02.CJHV.OVPAY.ATL.FILEDATE.DAT
+
+#SKT 과납해지 자동송금내역 2016.11.22 KHK
+resale.opauto.file.input.directory=/MVNO/REV/BS03/REV
+resale.opauto.file.backup.directory=/MVNO/REV/BACKUP/BS03/REV
+resale.opauto.trns.batchid=OPAUTO001
+resale.opauto.trns.regrid=CJHV
+resale.opauto.trns.remark=과납해지 자동송금 내역
+resale.opauto.trns.filename=BS03.CJHV.AUTO.TRNS.FILEDATE.DAT
+
+#SKT 지로파일 처리 내역 2017.11.02 KHK
+resale.gp15.file.input.directory=/MVNO/REV/GP15
+resale.gp15.file.backup.directory=/MVNO/REV/BACKUP/GP15
+resale.gp15.batchid=RSGP15
+resale.gp15.regrid=MVNOBATCH
+resale.gp15.remark=재판매 배치구분 - 지로파일 처리 내역(GP15)
+resale.gp15.filename=GP15.CJHV.FILEDATE
+
+#SKT 지로파일 오류 내역 2017.11.02 KHK
+resale.gp13.file.input.directory=/MVNO/REV/GP15
+resale.gp13.file.backup.directory=/MVNO/REV/BACKUP/GP15
+resale.gp13.batchid=RSGP13
+resale.gp13.regrid=MVNOBATCH
+resale.gp13.remark=재판매 배치구분 - 지로파일 오류 내역(GP13)
+resale.gp13.filename=GP13.CJHV.FILEDATE
+
+#KAIT 통신연체통지 2017.12.21
+kait.ovnt.host=211.57.224.130
+kait.ovnt.reg.port=56101
+kait.ovnt.recv.port=57101
+kait.ovnt.timeout=20000
+
+#FTP 파일 전송(신용카드(건별,정기)) 2018.01.09 KHK
+resale.ftp.cjvan.upload.batchid=RSFFU
+resale.ftp.cjvan.upload.regrid=MVNOBATCH
+resale.ftp.cjvan.upload.remark=재판매 배치구분 - FTP 파일 전송(신용카드(건별,정기))
+resale.ftp.cjvan.upload.host=218.238.92.34
+resale.ftp.cjvan.upload.port=22
+resale.ftp.cjvan.upload.userName=cjhvuser
+resale.ftp.cjvan.upload.password=P@ssw0rd
+resale.ftp.cjvan.upload.localDir=/MVNO/REV/CJVAN
+resale.ftp.cjvan.upload.localDirBackup=/MVNO/REV/BACKUP/CJVAN
+resale.ftp.cjvan.upload.remoteDirPut=/CJS_PG2/BATCHWORK01/batch/card/cjhello
+
+# Telenix FTP 연동
+telenix.ftp.host=52.32.211.29
+telenix.ftp.port=25000
+telenix.ftp.user=aluser1
+telenix.ftp.password=audiolog$5
+telenix.ftp.remoteDir=.
+telenix.ftp.localDir=/HVMVNO/prod/ftpFile/telenix
+
+#SKT 자동이체증빙 처리
+resale.autoreq.batchid=AUTOTRREQ
+resale.autoreq.regrid=MVNOBATCH
+resale.autoreq.remark=재판매 배치구분 - 자동이체증빙처리 요청
+resale.autores.batchid=AUTOTRRES
+resale.autores.regrid=MVNOBATCH
+resale.autores.remark=재판매 배치구분 - 자동이체증빙처리 응답
+resale.autoreq.file.req.input.directory=/MVNO/REV/DIRECT/REQ
+resale.autoreq.file.rlt.input.directory=/MVNO/REV/DIRECT/RLT
+resale.autoreq.file.eb14.input.directory=/MVNO/REV/DIRECT/EB14
+resale.autores.file.inf.input.directory=/MVNO/REV/DIRECT/INF
+resale.autores.file.daesa.input.directory=/MVNO/REV/DIRECT/DAESA
+resale.autoreq.filename.req=BS04.CJHV.FILEDATE.GE12.REQ.DAT
+resale.autoreq.filename.rlt=BS04.CJHV.FILEDATE.GE12.RLT.DAT
+resale.autoreq.filename.eb14=BS04.CJHV.FILEDATE.GP21.DAT
+resale.autores.filename.inf=BS04.CJHV.FILEDATE.GE12.INF.DAT
+resale.autores.filename.daesa=BS04.CJHV.FILEDATE.DAESA.DAT
+resale.autores.filenamepattern.inf=BS04.CJHV.{0}.GE12.INF.DAT
+resale.autores.filenamepattern.daesa=BS04.CJHV.{0}.DAESA.DAT
+resale.autores.daesa.ftp.host=52.32.211.190
+resale.autores.daesa.ftp.port=21
+resale.autores.daesa.ftp.user=sdx200
+resale.autores.daesa.ftp.password=sdx200
+resale.autores.daesa.ftp.remoteDir=VERIFICATION

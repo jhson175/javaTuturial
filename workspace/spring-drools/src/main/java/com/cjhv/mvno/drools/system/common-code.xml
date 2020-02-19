@@ -1,0 +1,1615 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="sy.cm">
+    <select id="getCommonCodeSetList" resultClass="hashMap" parameterClass="map">
+    SELECT  COMMON_GRP,
+            '' as COMMON_CD ,
+            COMMON_GRP_NM ,
+            COMMON_GRP || '  ' || COMMON_GRP_NM   as CODE_NM,
+            2 AS CD_LEVEL,
+            '0' AS SORT_NO,
+            COMMON_GRP_NM as GROUP_NM,
+            USE_YN,
+            SYS_FLG,
+            LENGTH, SYSTEM_ID,REF_CODE, REF_CODE2, REF_CODE3,
+            '' AS REF_CODE5, '' AS REF_CODE6,
+            RMRK,
+            REGR_ID
+      FROM  TSYCM_CODE_MAST
+     WHERE  SYS_FLG = 'Y'
+       <isNotEmpty property="COMMON_GRP" prepend="AND">
+          COMMON_GRP LIKE  #COMMON_GRP#|| '%'
+       </isNotEmpty>
+       <isNotEmpty property="COMMON_GRP_NM" prepend="AND">
+         COMMON_GRP_NM LIKE '%' || #COMMON_GRP_NM# || '%'
+       </isNotEmpty>
+    UNION ALL
+    SELECT COMMON_GRP,
+           COMMON_CD AS COMMON_CD,
+           COMMON_CD_NM as COMMON_GRP_NM,
+      COMMON_GRP || COMMON_CD || '   ' || COMMON_CD_NM as CODE_NM ,
+      3 AS CD_LEVEL,
+        SORT_NO AS SORT_NO,
+       (SELECT TSYCM_CODE_MAST.COMMON_GRP_NM FROM TSYCM_CODE_MAST WHERE TSYCM_CODE_MAST.COMMON_GRP = detail.COMMON_GRP) as GROUP_NM,
+      USE_YN,
+      (select TSYCM_CODE_MAST.SYS_FLG from TSYCM_CODE_MAST where detail.COMMON_GRP = TSYCM_CODE_MAST.COMMON_GRP) as SYS_FLG,
+      (select TSYCM_CODE_MAST.LENGTH from TSYCM_CODE_MAST where detail.COMMON_GRP = TSYCM_CODE_MAST.COMMON_GRP) as LENGTH,
+      (select TSYCM_CODE_MAST.SYSTEM_ID from TSYCM_CODE_MAST where detail.COMMON_GRP = TSYCM_CODE_MAST.COMMON_GRP) as SYS_FLG,
+        REF_CODE, REF_CODE2, REF_CODE3,   
+        REF_CODE5, REF_CODE6,
+        RMRK,
+      REGR_ID
+    FROM   TSYCM_CODE_DETAIL detail
+    Where 1 = 1
+      and SYS_FLG = 'Y'
+    <isNotEmpty property="COMMON_GRP" prepend="AND">
+      COMMON_GRP LIKE  #COMMON_GRP#|| '%'
+    </isNotEmpty>
+     <isNotEmpty property="COMMON_GRP_NM" prepend="AND">
+          COMMON_GRP in ( SELECT COMMON_GRP
+                          FROM TSYCM_CODE_MAST
+                           Where 1 = 1
+       					   and SYS_FLG = 'Y'
+       					   and COMMON_GRP_NM LIKE '%'|| #COMMON_GRP_NM# || '%' )
+       </isNotEmpty>
+    ORDER BY COMMON_GRP , SORT_NO
+    </select>
+
+    <!-- 그룹코드 등록 -->
+    <insert id="addCommonCode"  parameterClass="map" >
+      INSERT INTO TSYCM_CODE_MAST
+       (COMMON_GRP, COMMON_GRP_NM, LENGTH, SYSTEM_ID, REF_CODE, REF_CODE2, REF_CODE3, RMRK, USE_YN, REGR_ID, REG_DATE, CHGR_ID, CHG_DATE, SYS_FLG)
+    VALUES ( #COMMON_GRP#, #COMMON_GRP_NM#, #LENGTH#, #SYSTEM_ID#, #REF_CODE#,#REF_CODE2#, #REF_CODE3#,   #RMRK#, #USE_YN#, #USR_ID#, SYSDATE, #USR_ID#, SYSDATE,'Y' )
+  </insert>
+
+  <!-- 그룹코드 중복체크 -->
+  <select id="getCommonCodeCnt" resultClass="hashMap" parameterClass="map">
+  SELECT  COUNT(*) AS CNT
+    FROM  TSYCM_CODE_MAST
+   WHERE  COMMON_GRP = #COMMON_GRP#
+  </select>
+
+  <!-- 상세코드 등록 -->
+  <insert id="addCommonCodeDetail"  parameterClass="map" >
+    INSERT INTO TSYCM_CODE_DETAIL
+       (COMMON_GRP, COMMON_CD,  COMMON_CD_NM, SORT_NO, REF_CODE, REF_CODE2, REF_CODE3, REF_CODE4, REF_CODE5, REF_CODE6,  DEFAULT_YN,  RMRK, USE_YN, REGR_ID, REG_DATE, CHGR_ID, CHG_DATE, SYS_FLG)
+    VALUES (
+        #COMMON_GRP#,
+        #COMMON_CD#,
+        #COMMON_CD_NM#, 
+        #SORT_NO#, 
+        #REF_CODE#, 
+        #REF_CODE2#,
+        #REF_CODE3#,
+        #REF_CODE4#,        
+        #REF_CODE5#, 
+        #REF_CODE6#,
+        DECODE(#DEFAULT_YN#,1,'Y','N'), 
+        #RMRK#, 
+        #USE_YN#, 
+        #REGR_ID#, 
+        SYSDATE, 
+        #CHGR_ID#, 
+        SYSDATE, 
+        'Y'
+        )
+
+  </insert>
+
+  <!-- 그룹코드 변경 -->
+  <update id="modCommonCode"  parameterClass="map" >
+      UPDATE TSYCM_CODE_MAST
+       SET
+         COMMON_GRP_NM= #COMMON_GRP_NM# ,
+        LENGTH=     #LENGTH# ,
+        SYSTEM_ID=  #SYSTEM_ID# ,
+        REF_CODE=        #REF_CODE# ,
+        REF_CODE2=       #REF_CODE2# ,
+        REF_CODE3=       #REF_CODE3# ,
+        RMRK=       #RMRK# ,
+        USE_YN=     #USE_YN# ,
+        CHGR_ID=    #USR_ID# ,
+        CHG_DATE = sysdate
+      WHERE 1 = 1
+        and COMMON_GRP = #COMMON_GRP#
+  </update>
+
+  <!-- 상세코드 변경 (REF_CODE5,REF_CODE6 추가 - 유통고도화PJT 20140702) -->
+  <update id="modCommonCodeDetail"  parameterClass="map" >
+      UPDATE TSYCM_CODE_DETAIL
+    SET COMMON_CD=       #COMMON_CD# ,
+        COMMON_CD_NM=       #COMMON_CD_NM# ,
+        SORT_NO= #SORT_NO# ,
+        REF_CODE=         #REF_CODE# ,
+        REF_CODE2=        #REF_CODE2# ,
+        REF_CODE3=        #REF_CODE3# ,
+        REF_CODE4=        #REF_CODE4# ,
+        REF_CODE5=        #REF_CODE5# ,
+        REF_CODE6=        #REF_CODE6# ,
+        DEFAULT_YN=       DECODE(#DEFAULT_YN#,1,'Y','N') ,
+        RMRK=        #RMRK# ,
+        USE_YN=      #USE_YN# ,
+        CHGR_ID=     #CHGR_ID# ,
+        CHG_DATE=    sysdate
+    where COMMON_GRP = #COMMON_GRP#
+      and COMMON_CD = #COMMON_CD_ORG#
+  </update>
+  <delete id="delCommonCode" parameterClass="map">
+    UPDATE tsycm_code_mast
+    SET SYS_FLG = 'N'
+    where COMMON_GRP =  #COMMON_GRP#
+  </delete>
+  <delete id="delCommonCodeDetail"  parameterClass="map">
+    UPDATE tsycm_code_detail
+    SET SYS_FLG = 'N'
+    where COMMON_GRP =  #COMMON_GRP#
+      AND COMMON_CD = #COMMON_CD_ORG#
+  </delete>
+  <select id="getCommonCodeList" resultClass="hashMap"  parameterClass="map" >
+        SELECT COMMON_GRP,
+            '' as COMMON_CD ,
+         COMMON_GRP_NM ,
+         COMMON_GRP || '  ' || COMMON_GRP_NM   as CODE_NM,
+         2 AS CD_LEVEL,
+           0 AS SORT_NO,
+           COMMON_GRP_NM as GROUP_NM,
+         USE_YN,
+         SYS_FLG,
+          LENGTH, SYSTEM_ID,REF_CODE, REF_CODE2, REF_CODE3,RMRK,
+          REGR_ID
+    From TSYCM_CODE_MAST
+     Where 1 = 1
+       and SYS_FLG = 'Y'
+      <isNotEmpty property="COMMON_GRP" prepend="AND">
+        COMMON_GRP = #COMMON_GRP#
+      </isNotEmpty>
+  </select>
+  <select id="getCommonCodeDetailList"  resultClass="hashMap" parameterClass="map" >
+      SELECT A.COMMON_GRP,
+           A.COMMON_CD AS COMMON_CD,
+           A.COMMON_CD AS COMMON_CD_ORG,
+           '0' as DEL_YN,
+           A.COMMON_CD_NM as COMMON_CD_NM,
+           A.COMMON_GRP || A.COMMON_CD || '   ' || A.COMMON_CD_NM as CODE_NM ,
+           TO_NUMBER(A.SORT_NO) AS SORT_NO,
+           B.COMMON_GRP_NM as GROUP_NM,
+           A.USE_YN,
+           B.SYS_FLG as SYS_FLG,
+           B.LENGTH  as LENGTH,
+           B.SYSTEM_ID as SYS_FLG,
+           A.REF_CODE, 
+           A.REF_CODE2, 
+           A.REF_CODE3,
+           A.REF_CODE4, -- 공통코드관리 화면에서 사용하기위해 추가 (dante90 20160629) 
+           A.REF_CODE5,A.REF_CODE6, --채널유형 표시를 위해 추가(유통고도화PJT 20140702)
+           A.RMRK, decode(A.DEFAULT_YN,'Y',1,0) as DEFAULT_YN,
+          (SELECT FSYCO_USR_NM(A.REGR_ID) FROM DUAL) AS REGR_NM,
+          TO_CHAR(A.REG_DATE, 'yyyy-MM-dd hh24:mi:ss') AS REG_DATE_MASK,
+          (SELECT FSYCO_USR_NM(A.CHGR_ID) FROM DUAL) AS CHGR_NM,      
+          TO_CHAR(A.CHG_DATE, 'yyyy-MM-dd hh24:mi:ss') AS CHG_DATE_MASK
+    FROM  TSYCM_CODE_DETAIL A
+         ,TSYCM_CODE_MAST B  
+    WHERE 1 = 1
+      AND A.COMMON_GRP = B.COMMON_GRP(+)
+      AND A.SYS_FLG = 'Y'
+    <isNotEmpty property="COMMON_GRP" prepend="AND">
+          A.COMMON_GRP = #COMMON_GRP#
+      </isNotEmpty>
+    ORDER BY A.COMMON_CD,TO_NUMBER(A.SORT_NO)  
+  </select>
+  
+  <select id="getCommonCodeDetailListByCode"  resultClass="hashMap" parameterClass="map" >
+      SELECT COMMON_GRP,
+           COMMON_CD AS COMMON_CD,
+           COMMON_CD AS COMMON_CD_ORG,
+           '0' as DEL_YN,
+         COMMON_CD_NM as COMMON_CD_NM,
+      COMMON_GRP || COMMON_CD || '   ' || COMMON_CD_NM as CODE_NM ,
+        SORT_NO AS SORT_NO,
+       (SELECT TSYCM_CODE_MAST.COMMON_GRP_NM FROM TSYCM_CODE_MAST WHERE TSYCM_CODE_MAST.COMMON_GRP = detail.COMMON_GRP) as GROUP_NM,
+      USE_YN,
+      (select TSYCM_CODE_MAST.SYS_FLG from TSYCM_CODE_MAST where detail.COMMON_GRP = TSYCM_CODE_MAST.COMMON_GRP) as SYS_FLG,
+      (select TSYCM_CODE_MAST.LENGTH from TSYCM_CODE_MAST where detail.COMMON_GRP = TSYCM_CODE_MAST.COMMON_GRP) as LENGTH,
+      (select TSYCM_CODE_MAST.SYSTEM_ID from TSYCM_CODE_MAST where detail.COMMON_GRP = TSYCM_CODE_MAST.COMMON_GRP) as SYS_FLG,
+        REF_CODE, REF_CODE2, REF_CODE3,
+        REF_CODE5,REF_CODE6, --채널유형 표시를 위해 추가(유통고도화PJT 20140702)
+        RMRK, decode(DEFAULT_YN,'Y',1,0) as DEFAULT_YN,
+      REGR_ID
+    FROM   TSYCM_CODE_DETAIL detail
+    Where 1 = 1
+      and SYS_FLG = 'Y'
+    <isNotEmpty property="COMMON_GRP" prepend="AND">
+        COMMON_GRP = #COMMON_GRP#
+      </isNotEmpty>
+    <isNotEmpty property="COMMON_CD" prepend="AND">
+        COMMON_CD = #COMMON_CD#
+      </isNotEmpty>  
+  </select>
+
+  <select id="getCommonCodeComboList"  resultClass="hashMap" parameterClass="map" >
+      <isEqual property="SEL_OPTION" compareValue="ALL" >
+        <![CDATA[
+         SELECT  '%'as COMMON_CD
+                , #SEL_OPTION_NM# as COMMON_CD_NM
+                ,'' as REF_CODE,  '' as  REF_CODE2,  '' as  REF_CODE3,'N' as DEFAULT_YN, '0' AS SORT_NO
+                ,'' as REF_CODE5, '' as REF_CODE6
+          FROM  DUAL
+         UNION  ALL
+               ]]>
+       </isEqual>
+		 <isEqual property="SEL_OPTION" compareValue="SEL" >
+        <![CDATA[
+         SELECT  '[]' as COMMON_CD
+                , #SEL_OPTION_NM# as COMMON_CD_NM
+                ,'' as REF_CODE,  '' as REF_CODE2,  ''  as  REF_CODE3,  'N' as DEFAULT_YN,'0' AS SORT_NO
+                ,'' as REF_CODE5, '' as REF_CODE6
+          FROM  DUAL
+         UNION  ALL
+               ]]>
+       </isEqual>
+        SELECT
+	            COMMON_CD,
+	            <isEqual property="CODEVIEW_YN" compareValue="Y" >
+	            <![CDATA[
+	            '['||COMMON_CD||']'||COMMON_CD_NM as COMMON_CD_NM
+	             ]]>
+	            </isEqual>
+	            <isEqual property="CODEVIEW_YN" compareValue="N" >
+	            COMMON_CD_NM as COMMON_CD_NM
+	            </isEqual>
+	            ,REF_CODE, REF_CODE2, REF_CODE3, DEFAULT_YN, SORT_NO
+                ,REF_CODE5, REF_CODE6   -- 채널유형표시를 위해 추가(유통고도화PJT 20140630)
+          FROM  TSYCM_CODE_DETAIL detail
+         WHERE  SYS_FLG = 'Y'
+           AND  detail.USE_YN  = 'Y'
+    	  	   <isNotEmpty property="COMMON_GRP" prepend="AND">
+                COMMON_GRP = #COMMON_GRP#
+     		   </isNotEmpty>
+    		   <isNotEmpty property="COMMON_CD_NM" prepend="AND">
+                COMMON_CD_NM = #COMMON_CD_NM#
+     		   </isNotEmpty>
+	     ORDER BY SORT_NO
+  </select>
+
+  <!-- 교육 종료후 아래의 세 statement 는 삭제할 것  -->
+  <insert id="addExampleDetail"  parameterClass="map" >
+      insert into test
+    select #COMMON_GRP#, #COMMON_GRP#||to_char(max(a.COMMON_CD)),
+           #CD_VAL#,#COMMON_CD_NM#,#SORT_NO#, #REF_CODE#,#REF_CODE2#,#REF_CODE3#,
+           #RMRK#, 'Y',#USR_ID#,sysdate,#USR_ID#,sysdate, 'Y'
+    from (
+        select lpad(max(to_number(substr(COMMON_CD,8,12))) + 1,5,'0') as COMMON_CD
+       from tsy_code_detail
+       where COMMON_GRP = #COMMON_GRP#
+       union all
+       select '00001' as COMMON_CD from dual
+     ) a
+  </insert>
+
+  <delete id="delExampleDetail"  parameterClass="map">
+    UPDATE test
+    SET SYS_FLG = 'N'
+    where COMMON_GRP =  #COMMON_GRP# AND COMMON_CD = #COMMON_CD#
+  </delete>
+
+  <update id="modExampleDetail"  parameterClass="map" >
+      update test
+    SET
+        CD_VAL = #CD_VAL#,
+        COMMON_CD_NM = #COMMON_CD_NM#,
+        SORT_NO = #SORT_NO#,
+        REF_CODE = #REF_CODE#,
+        REF_CODE2 = #REF_CODE2#,
+        REF_CODE3 = #REF_CODE3#,
+        RMRK = #RMRK#,
+        USE_FLG = #USE_FLG#,
+        CHGR_ID = #CHGR_ID#,
+        CHG_DT=sysdate
+    where COMMON_GRP = #COMMON_GRP#
+      and COMMON_CD = #COMMON_CD#
+  </update>
+
+	<select id="getCorpIdList"  resultClass="hashMap" parameterClass="map" >
+
+      <isEqual property="SEL_OPTION" compareValue="ALL" >
+        <![CDATA[
+             SELECT '%' as SO_ID , #SEL_OPTION_NM# as SO_NM
+             FROM DUAL
+             UNION ALL
+               ]]>
+       </isEqual>
+		 <isEqual property="SEL_OPTION" compareValue="SEL" >
+        <![CDATA[
+             SELECT '[]' as SO_ID , #SEL_OPTION_NM# as SO_NM
+             FROM DUAL
+             UNION ALL
+               ]]>
+       </isEqual>
+      SELECT
+        CORP_ID as  SO_ID ,
+      <isEqual property="CODEVIEW_YN" compareValue="Y" >
+             <![CDATA[
+               '['||CORP_ID||']'||CORP_NM as SO_NM
+               ]]>
+          </isEqual>
+          <isEqual property="CODEVIEW_YN" compareValue="N" >
+             CORP_NM as SO_NM
+          </isEqual>
+        FROM   TSYCO_CORP_MAST
+          Where 1 = 1
+          and USE_YN = 'Y'
+     ORDER BY CORP_ID
+
+  </select>
+  <select id="getDeptList"  resultClass="hashMap" parameterClass="map" >
+
+    SELECT DEPT_CD , DEPT_NM, SO_ID
+	From TSYUM_DEPT_MAST
+	WHERE 1 = 1
+	  and USE_YN = 'Y'
+     <isNotEmpty property="SO_ID" prepend="AND">
+        SO_ID = #SO_ID#
+     </isNotEmpty>
+     <isNotEmpty property="DEPT_NM" prepend="AND">
+        DEPT_NM LIKE '%' || #DEPT_NM# || '%'
+     </isNotEmpty>
+     Order by DEPT_NM
+  </select>
+  <select id="getCorpId"  resultClass="hashMap" parameterClass="map" >
+	  SELECT CRR_ID as CORP_ID , CORP_NM
+      FROM   TSYCO_CORP_MAST
+       Where 1 = 1
+         and USE_YN = 'Y'
+     <isNotEmpty property="CORP_NM" prepend="AND">
+        CORP_NM LIKE '%' || #CORP_NM# || '%'
+     </isNotEmpty>
+  </select>
+   <select id="getUsrId"  resultClass="hashMap" parameterClass="map" >
+	  SELECT USR_ID  , USR_NM
+      FROM   tsyum_USR_MAST
+       Where 1 = 1
+         and USE_YN = 'Y'
+         <isNotEmpty property="CORP_ID" prepend="AND">
+        CRR_ID = #CORP_ID#
+     </isNotEmpty>
+     <isNotEmpty property="USR_NM" prepend="AND">
+        USR_NM LIKE '%' || #USR_NM# || '%'
+     </isNotEmpty>
+  </select>
+  <select id="getSoId"  resultClass="hashMap" parameterClass="map" >
+      SELECT  /*지점*/
+	          CO.SO_ID
+	         ,DECODE(#gProgTxt#,'ENG',CO.CORP_ESNM,CO.CORP_NM) AS SO_NM
+			 ,SO.SO_KIND
+			 ,SO.MAIN_SO_ID AS MST_SO_ID
+			 ,CO.CRR_ID
+        FROM  TSYCO_SO_MAST SO, TSYCO_CORP_MAST CO
+       WHERE  SO.USE_YN  = 'Y'
+         AND  SO.SO_ID   = CO.SO_ID
+         AND  CO.SO_YN   = 'Y'
+         AND  SO.SO_NM LIKE '%' || #SO_NM# || '%'
+     <isNotEmpty property="SO_KIND" prepend="AND">
+        (SO.SO_KIND =  #SO_KIND# OR SO.SO_ID = '100')
+     </isNotEmpty>
+     <isNotEmpty property="USR_AUTH_YN" prepend="AND">
+     		<isNotEmpty property="USR_ID" >
+  		 SO.SO_ID IN (SELECT SO_ID
+  		                FROM TSYAM_USR_SO_MATRIX
+  		               WHERE USR_ID = #USR_ID#)
+        	</isNotEmpty>
+     </isNotEmpty>
+     ORDER BY SO_NM
+  </select>
+  <select id="getPostNo"  resultClass="hashMap" parameterClass="map" >
+	  SELECT ZIP_CD  , ADDR
+      FROM   TSYCM_POSTCODE
+       Where 1 = 1
+     <isNotEmpty property="ADDR" prepend="AND">
+        ADDR LIKE '%' || #ADDR# || '%'
+     </isNotEmpty>
+  </select>
+  <select id="getPgmId"  resultClass="hashMap" parameterClass="map" >
+	  SELECT PGM_ID  , PGM_NM
+      FROM   TSYPM_PROG_MAST
+       Where 1 = 1
+         and USE_YN = 'Y'
+     <isNotEmpty property="PGM_ID" prepend="AND">
+        PGM_ID LIKE '%' || #PGM_ID# || '%'
+     </isNotEmpty>
+     <isNotEmpty property="PGM_NM" prepend="AND">
+        PGM_NM LIKE '%' || #PGM_NM# || '%'
+     </isNotEmpty>
+  </select>
+   <select id="getCommonGrpDetailList"  resultClass="hashMap" parameterClass="map" >
+		SELECT COMMON_GRP,
+			   COMMON_CD
+	     		,
+			   COMMON_CD_NM
+			   ,
+		       REF_CODE, REF_CODE2,REF_CODE3, SORT_NO, USE_YN
+		FROM TSYCM_CODE_DETAIL
+		WHERE 1 = 1
+		 <isNotEmpty property="COMMON_GRP" prepend="AND">
+	        COMMON_GRP = #COMMON_GRP#
+	     </isNotEmpty>
+		  <isNotEmpty property="USE_YN" prepend="AND">
+        	USE_YN =  #USE_YN#
+     	</isNotEmpty>
+     	ORDER BY COMMON_GRP,COMMON_CD,SORT_NO
+   </select>
+   <select id="getCorpTskList"  resultClass="hashMap" parameterClass="map" >
+		select /*getCorpTskList*/
+		      distinct
+			  co.CORP_TSK_CL , code.COMMON_CD_NM as CORP_TSK_CL_NM, code.SORT_NO
+		from tsyco_so_corp_tsk_cl co, tsycm_code_detail code
+		where 1 =1
+		  AND code.COMMON_GRP = 'SYCO002'
+		  AND code.USE_YN = 'Y'
+		  <isNotEmpty property="SO_ID" prepend="AND">
+	        co.SO_ID = #SO_ID#
+	       </isNotEmpty>
+	       <isNotEmpty property="CRR_ID" prepend="AND">
+	        co.CRR_ID = #CRR_ID#
+	       </isNotEmpty>
+		  and co.CORP_TSK_CL = code.common_cd
+		Order by  CORP_TSK_CL_NM
+  </select>
+  <select id="getCorpListBySO"  resultClass="hashMap" parameterClass="map" >
+		select distinct
+	   		co.*
+		from tsyco_so_corp_tsk_cl cl ,tsyco_corp_mast co
+		where 1 =1
+		  <isNotEmpty property="SO_ID" prepend="AND">
+	        cl.SO_ID = #SO_ID#
+	       </isNotEmpty>
+	       <isNotEmpty property="USR_AUTH_YN" prepend="AND">
+     		<isNotEmpty property="USR_ID" prepend="">
+        		cl.SO_ID in (SELECT SO_ID
+        		          	 FROM TSYAM_USR_SO_MATRIX
+        		          	WHERE USR_ID = #USR_ID#)
+        	</isNotEmpty>
+     	</isNotEmpty>
+	       <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+	        cl.CORP_TSK_CL = #CORP_TSK_CL#
+	       </isNotEmpty>
+		  and cl.crr_id = co.crr_id
+		  <isNotEmpty property="CORP_NM" prepend="AND">
+	        co.CORP_NM LIKE '%' || #CORP_NM# || '%'
+	       </isNotEmpty>
+		  <isNotEmpty property="SO_YN" prepend="AND">
+	        co.SO_YN = #SO_YN#
+	       </isNotEmpty>
+	      Order by co.Corp_nm
+  </select>
+  <select id="getCorpListBySOAll"  resultClass="hashMap" parameterClass="map" >
+		select distinct
+	   		co.*
+		from tsyco_so_corp_tsk_cl cl ,tsyco_corp_mast co
+		where 1 =1
+		  <isNotEmpty property="SO_ID" prepend="AND">
+	        cl.SO_ID = #SO_ID#
+	       </isNotEmpty>
+	       <isNotEmpty property="USR_AUTH_YN" prepend="AND">
+     		<isNotEmpty property="USR_ID" prepend="">
+        		cl.SO_ID in (SELECT SO_ID
+        		          	 FROM TSYAM_USR_SO_MATRIX
+        		          	WHERE USR_ID = #USR_ID#)
+        	</isNotEmpty>
+     	   </isNotEmpty>
+	       <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+	        cl.CORP_TSK_CL = #CORP_TSK_CL#
+	       </isNotEmpty>
+		  and cl.crr_id = co.crr_id
+		  <isNotEmpty property="CORP_NM" prepend="AND">
+	        co.CORP_NM LIKE '%' || #CORP_NM# || '%'
+	       </isNotEmpty>
+		  <isNotEmpty property="SO_YN" prepend="AND">
+	        co.SO_YN = #SO_YN#
+	       </isNotEmpty>
+	      Order by co.Corp_nm
+  </select>
+  <select id="getAllCorpTskList"  resultClass="hashMap" parameterClass="map" >
+		select distinct
+			  code.COMMON_CD as CORP_TSK_CL , code.COMMON_CD_NM as CORP_TSK_CL_NM,code.sORT_NO
+		from  tsycm_code_detail code
+		where 1 =1
+		  AND code.COMMON_GRP = 'SYCO002'
+		  AND code.USE_YN = 'Y'
+		Order by CORP_TSK_CL_NM
+  </select>
+    <select id="getFindUsrList"  resultClass="hashMap" parameterClass="map" >
+        SELECT  A.USR_ID,
+                D.SO_ID,
+                A.ATTACH_TYP,
+                A.USR_NM,
+                A.USR_NAME_EN,
+                C.ORG_ID AS DEPT_CD,
+                C.ORG_NM AS DEPT_NM,
+                C.ORG_ID AS CRR_ID,
+                DECODE(C.PRIV_TP_CD,'1',NULL, C.ORG_NM) AS PRTNR_NM,
+                D.EMP_NO,
+                A.PASSWORD,
+                A.TEL_NO,
+                A.CELL_NO,
+                A.EML,
+                A.FAXNO,
+                A.LAST_LOGIN_DT,
+                A.USE_YN,
+                A.REGR_ID,
+                A.REG_DATE,
+                A.CHGR_ID,
+                A.CHG_DATE
+        FROM    TSYUM_USR_MAST A,
+                TSYUM_EMP_MAST D,
+                TDNDI_ORG_INFO C
+        WHERE   A.EMP_NO = D.EMP_NO
+        AND     D.DEPT_CD = C.ORG_ID
+        AND     A.USE_YN = 'Y'
+        AND     D.USE_YN = 'Y'
+        AND     TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+                BETWEEN D.USE_START_DATE AND D.USE_END_DATE
+        AND     TO_CHAR(SYSDATE,'YYYYMMDD')
+                BETWEEN C.APPY_STRT_DT AND C.APPY_END_DT
+        <isNotEqual property="ATTACH_TYP" compareValue="%" prepend="AND">
+                A.ATTACH_TYP = #ATTACH_TYP#
+        </isNotEqual>
+        <isNotEmpty property="DEPT_CD" prepend="AND">
+                C.ORG_ID = #DEPT_CD#
+        </isNotEmpty>
+        <isNotEmpty property="USR_NM" prepend="AND">
+                A.USR_NM LIKE '%'||#USR_NM#||'%'
+        </isNotEmpty>
+        <isNotEmpty property="USR_ID" prepend="AND">
+                A.USR_ID = #USR_ID#
+        </isNotEmpty>
+        <isEqual property="SO_ID" compareValue="%" prepend="AND">
+                D.SO_ID  IN $SO_ID_ALL$
+        </isEqual>
+        <isNotEqual property="SO_ID" compareValue="%" prepend="AND">
+                D.SO_ID  = #SO_ID#
+        </isNotEqual>
+        ORDER BY ATTACH_TYP DESC, DEPT_CD,USR_ID
+    </select>
+
+  <select id="getFindCorpList"  resultClass="hashMap" parameterClass="map" >
+			select  distinct co.*, co2.corp_nm as ST_CORP_NM
+			from tsyco_corp_mast co, tsyco_corp_mast co2
+			 <isEmpty property="CORP_YN" prepend="">
+				 <isNotEmpty property="CORP_TSK_CL" prepend="">
+		        	, tsyco_so_corp_tsk_cl cl
+		       	 </isNotEmpty>
+		         <isEmpty property="CORP_TSK_CL" prepend="">
+		         	<isNotEmpty property="SO_ID" prepend="">
+				        , tsyco_so_corp_tsk_cl cl
+				     </isNotEmpty>
+		       	 </isEmpty>
+		     </isEmpty>
+		     <isNotEmpty property="CORP_YN" prepend="">
+		     	, tsyco_so_corp_tsk_cl cl
+		     </isNotEmpty>
+			where 1 =1
+			    and co.st_crr_id = co2.crr_id (+)
+				<isNotEmpty property="CORP_YN" prepend="AND">
+		        	cl.crr_id = co.crr_id
+		        </isNotEmpty>
+			    <isNotEmpty property="USE_YN" prepend="AND">
+		        	co.USE_YN = #USE_YN#
+		        </isNotEmpty>
+				<isNotEmpty property="SO_YN" prepend="AND">
+		        	co.so_yn = #SO_YN#
+		       </isNotEmpty>
+				<isNotEmpty property="CORP_NM" prepend="AND">
+		        	co.CORP_NM LIKE '%' ||#CORP_NM# || '%'
+		       </isNotEmpty>
+		       <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+		        	cl.crr_id = co.crr_id
+		       	 </isNotEmpty>
+		         <isEmpty property="CORP_TSK_CL" prepend="">
+		         	<isNotEmpty property="SO_ID" prepend="AND">
+				        cl.crr_id = co.crr_id
+				     </isNotEmpty>
+		       	 </isEmpty>
+		       <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+	        		cl.CORP_TSK_CL = #CORP_TSK_CL#
+	      	   </isNotEmpty>
+	      	   <isNotEmpty property="BIZ_REG_NO" prepend="AND">
+	        		co.Biz_reg_no  LIKE '%' ||#BIZ_REG_NO# || '%'
+	      	   </isNotEmpty>
+	      	   <isNotEmpty property="CRR_ID" prepend="AND">
+	        		co.CRR_ID = #CRR_ID#
+	      	   </isNotEmpty>
+	      	   <isNotEmpty property="SO_ID" prepend="AND">
+	       			 cl.SO_ID = #SO_ID#
+	       		</isNotEmpty>
+	       	order by co.corp_nm
+  </select>
+  <select id="getFindCorpListByAuth"  resultClass="hashMap" parameterClass="map" >
+			select  distinct co.*
+			from tsyco_corp_mast co
+		        	, tsyco_so_corp_tsk_cl cl, tsyam_usr_so_matrix mat
+			where 1 =1
+	      	   <isNotEmpty property="SO_YN" prepend="AND">
+	       			 co.so_yn = #SO_YN#
+	       	   </isNotEmpty>
+				and cl.crr_id = co.crr_id
+	       		and mat.usr_id = #USR_ID#
+	       		and cl.so_id  = mat.so_id
+				<isNotEmpty property="CORP_NM" prepend="AND">
+		        	co.CORP_NM LIKE #CORP_NM# || '%'
+		       </isNotEmpty>
+		       <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+	        		cl.CORP_TSK_CL = #CORP_TSK_CL#
+	      	   </isNotEmpty>
+	      	   <isNotEmpty property="SO_ID" prepend="AND">
+	       			 cl.SO_ID = #SO_ID#
+	       		</isNotEmpty>
+			order by co.corp_nm
+
+  </select>
+
+  <insert id="addCorp"  parameterClass="map" >
+      INSERT INTO TSYCO_CORP_MAST(CRR_ID, CORP_NM, CORP_HSNM, CORP_ENAME, CORP_ESNM,
+	SO_YN, SO_ID, BIZ_REG_NO, TEL_NO, FAXNO, ZIP_CD, ADDR, ADDR_EN, BUSI_TP, BUSI_CNDT,
+	 CUST_CORP_ID, REP_NM, REP_NM_EN, HMPG, EML, RMRK, USE_YN   , REGR_ID, REG_DATE, CHGR_ID, CHG_DATE,FC_TYPE
+	 ,ST_CRR_ID)
+	VALUES
+	(#CRR_ID#, #CORP_NM#, #CORP_HSNM#, #CORP_ENAME#, #CORP_ESNM#, 'N', '', #BIZ_REG_NO#,
+	 #TEL_NO#, #FAXNO#, #ZIP_CD#, #ADDR#, #ADDR_EN#,
+	 #BUSI_TP#, #BUSI_CNDT#, #CUST_CORP_ID#, #REP_NM#, #REP_NM_EN#, #HMPG#, #EML#, #RMRK#, #USE_YN#
+	 , #USR_ID#, sysdate, #USR_ID#, sysdate,#FC_TYPE#,#ST_CRR_ID#)
+  </insert>
+  <update id="modCorp"  parameterClass="map" >
+        UPDATE TSYCO_CORP_MAST
+		SET
+		CORP_NM         = #CORP_NM#   ,
+		CORP_HSNM       = #CORP_HSNM#   ,
+		CORP_ENAME      = #CORP_ENAME#   ,
+		CORP_ESNM       = #CORP_ESNM#   ,
+		SO_YN           = #SO_YN#   ,
+		SO_ID           = #SO_ID#   ,
+		BIZ_REG_NO      = #BIZ_REG_NO#   ,
+		TEL_NO          = #TEL_NO#   ,
+		FAXNO           = #FAXNO#   ,
+		ZIP_CD          = #ZIP_CD#   ,
+		ADDR            = #ADDR#   ,
+		ADDR_EN         = #ADDR_EN#   ,
+		BUSI_TP         = #BUSI_TP#   ,
+		BUSI_CNDT       = #BUSI_CNDT#   ,
+		CUST_CORP_ID    = #CUST_CORP_ID#   ,
+		REP_NM          = #REP_NM#   ,
+		REP_NM_EN       = #REP_NM_EN#   ,
+		HMPG            = #HMPG#   ,
+		EML             = #EML#   ,
+		RMRK            = #RMRK#   ,
+		USE_YN          = #USE_YN# ,
+		FC_TYPE         = #FC_TYPE# ,
+		ST_CRR_ID         = #ST_CRR_ID# ,
+		CHGR_ID    = #USR_ID# ,
+		CHG_DATE  = sysdate
+		WHERE 1 = 1
+		  and CRR_ID          = #CRR_ID#
+  </update>
+  <insert id="addSoCorpTsk"  parameterClass="map" >
+	INSERT INTO tsyco_so_corp_tsk_cl
+	(SO_ID, CRR_ID, CORP_TSK_CL, REGR_ID, REG_DATE)
+	VALUES
+	(#SO_ID#, #CRR_ID#, #CORP_TSK_CL#,#USR_ID#, sysdate)
+  </insert>
+  <delete id="delSoCorpTsk"  parameterClass="map" >
+    DELETE FROM tsyco_so_corp_tsk_cl
+	WHERE 1 = 1
+	  and SO_ID = #SO_ID#
+	  and CRR_ID = #CRR_ID#
+	  and CORP_TSK_CL = #CORP_TSK_CL#
+  </delete>
+  <delete id="delSoCorpTskUsr"  parameterClass="map" >
+	  DELETE from tsyum_usr_tsk_matrix
+	  where 1 = 1
+	    and so_id = #SO_ID#
+		and CORP_TSK_CL = #CORP_TSK_CL#
+		and USR_id IN (Select USR_ID
+				   	   FROM TSYUM_USR_MAST
+					   WHERE 1 = 1
+						and CRR_ID = #CRR_ID#)
+  </delete>
+   <select id="getSoCorpTskList"  resultClass="hashMap" parameterClass="map" >
+		select distinct
+			  co.SO_ID,so.so_nm, co.CORP_TSK_CL , code.COMMON_CD_NM as CORP_TSK_CL_NM, code.SORT_NO
+		from tsyco_so_corp_tsk_cl co, tsycm_code_detail code, tsyco_so_mast so
+		where 1 =1
+		  AND code.COMMON_GRP = 'SYCO002'
+		  AND code.USE_YN = 'Y'
+		  <isNotEmpty property="SO_ID" prepend="AND">
+	        co.SO_ID = #SO_ID#
+	       </isNotEmpty>
+	       <isNotEmpty property="CRR_ID" prepend="AND">
+	        co.CRR_ID = #CRR_ID#
+	       </isNotEmpty>
+		  and co.CORP_TSK_CL = code.common_cd
+		  and co.so_id = so.so_id
+		Order by to_number(SORT_NO)
+  </select>
+   <select id="getSoCorpTskListByReg"  resultClass="hashMap" parameterClass="map" >
+		select distinct
+			  co.SO_ID,so.so_nm, co.CORP_TSK_CL , code.COMMON_CD_NM as CORP_TSK_CL_NM, code.SORT_NO,0 as DEL_YN, co.CRR_ID
+		from tsyco_so_corp_tsk_cl co, tsycm_code_detail code, tsyco_so_mast so, tsyam_usr_so_matrix am
+		where 1 =1
+		  AND code.COMMON_GRP = 'SYCO002'
+		  AND code.USE_YN = 'Y'
+		  and am.usr_id = #USR_ID#
+		  and am.so_id = co.so_id
+		  <isNotEmpty property="CRR_ID" prepend="AND">
+	          co.CRR_ID = #CRR_ID#
+	       </isNotEmpty>
+		  and co.CORP_TSK_CL = code.common_cd
+		  and co.CORP_TSK_CL = code.common_cd
+		  and co.so_id = so.so_id
+		Order by SO_NM, CORP_TSK_CL_NM
+  </select>
+  <select id="getFindCorpListByAuthSo"  resultClass="hashMap" parameterClass="map" >
+			select  distinct co.*
+			from tsyco_corp_mast co
+		        	,  tsyam_usr_so_matrix mat
+		      <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+	        		,tsyco_so_corp_tsk_cl cl
+	      	   </isNotEmpty>
+	      	    <isEmpty property="CORP_TSK_CL" prepend="AND">
+	      	     <isNotEmpty property="SO_ID" prepend="AND">
+	       			,tsyco_so_corp_tsk_cl cl
+	       		</isNotEmpty>
+	      	   </isEmpty>
+			where 1 =1
+	       		and mat.usr_id = #USR_ID#
+	       		and cl.so_id  = mat.so_id
+				<isNotEmpty property="CORP_NM" prepend="AND">
+		        	co.CORP_NM LIKE #CORP_NM# || '%'
+		       </isNotEmpty>
+		       <isNotEmpty property="CORP_TSK_CL" prepend="AND">
+	        		cl.CORP_TSK_CL = #CORP_TSK_CL#
+	        		and cl.crr_id = co.crr_id
+	      	   </isNotEmpty>
+	      	   <isNotEmpty property="SO_ID" prepend="AND">
+	       			 cl.SO_ID = #SO_ID#
+	       		</isNotEmpty>
+			and  usr.crr_id in (
+				        		select distinct  b.crr_id
+								from tsyum_usr_mast a, tsyco_corp_mast b
+								where 1 = 1
+								  and a.CRR_id = b.CRR_id
+								  and a.usr_id = #USR_ID#
+								 union all
+								   select distinct  b.crr_id
+								from tsyum_usr_mast a, tsyco_corp_mast b, tsyam_usr_so_matrix so
+								where 1 = 1
+								  and a.usr_id = #USR_ID#
+								  and a.usr_id = so.usr_id
+								  and so.so_id = b.so_id
+								union
+								select distinct crr_id
+								from tsyco_corp_mast
+								where 1 = 1
+								  and use_yn = 'Y'
+								  AND SO_YN = 'Y'
+								  and crr_id in (select a.CRR_ID
+								                 from tsyco_so_corp_tsk_cl a, tsyam_usr_so_matrix b
+												 where 1 =1
+												   and a.so_id = b.so_id
+												   and b.usr_id = #USR_ID# )
+						)
+  </select>
+  <select id="getLatestUserLog"  resultClass="hashMap" parameterClass="map" ><![CDATA[
+select  extract(year from log_dtm)
+        || '년 '
+        || extract(month from log_dtm)
+        || '월 '
+        || extract(day from log_dtm)
+        || '일 '
+        || extract(hour from log_dtm)
+        || '시 '
+        || extract(minute from log_dtm)
+        || '분 '
+        || round(extract(second from log_dtm),1)
+        || '초 ' as log_dtm,
+        IP_ADDR
+from  (
+        select  nvl(min(a.log_dtm),current_timestamp ) as log_dtm,
+                nvl(min(a.IP_ADDR),'이력으로 기록될 예정' ) as IP_ADDR
+        from  (
+                select  /*+ index_desc(a IX_TSYLM_USR_CONN_01) */
+                        to_timestamp(LOG_DATE, 'YYYYMMDDHH24MISSFF4')  as log_dtm,
+                        IP_ADDR
+                from    TSYLM_USR_CONN a
+                where   usr_id = #USR_ID#
+                and     a.LOG_DATE between ( TO_CHAR( SYSDATE-30,'YYYYMMDD' ) || '0000000000' ) and '999912312359599999'
+                and     rownum = 1
+             ) a
+      )
+ ]]></select>
+  <insert id="addConnLog"  parameterClass="map" >
+     Insert into tsylm_conn (LOG_DATE, USR_ID, MENU_ID)
+     select TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF4') ,#USR_ID#, menu_id
+     from tsypm_menu
+     where PGM_Id = #PGM_ID#
+       and use_yn ='Y'
+       and rownum = 1
+  </insert>
+   <insert id="addUsrConnLog"  parameterClass="map" >
+INSERT INTO TSYLM_USR_CONN ( USR_ID, LOG_DATE, IP_ADDR, MAC_ADDR, SUCCESS_YN )
+VALUES ( #USR_ID#, TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF4'), #IP_ADDR#, #MAC_ADDR#, nvl(#SUCCESS_YN#,'Y') )
+  </insert>
+
+  <!-- 화면별 접속로그 조회 -->
+  <select id="getConnLogList"  resultClass="hashMap" parameterClass="map" >
+	SELECT  UPUPUPMENU.MENU_ID AS SYSTEM_ID
+	        ,UPUPUPMENU.MENU_NM AS SYSTEM_NM
+	        ,UPUPMENU.MENU_ID AS SUB_SYSTEM_ID
+	        ,UPUPMENU.MENU_NM AS SUB_SYSTEM_NM
+	        ,UPMENU.UP_MENU_ID
+	        ,UPMENU.MENU_NM AS UP_MENU_NM
+	        ,MENU.MENU_ID
+	        ,MENU.MENU_NM
+	        ,LOG.READCNT
+            ,LOG.READUSR
+	  FROM  (
+             SELECT MENU_ID
+                   ,SUM(READCNT) AS READCNT
+                   ,SUM(READUSR) AS READUSR
+              FROM (
+        	         SELECT  CONN.MENU_ID
+        	                 ,COUNT(CONN.MENU_ID)    AS READCNT
+                             ,COUNT(DISTINCT USR_ID) AS  READUSR
+        	           FROM  TSYLM_CONN CONN
+        	                 ,TSYPM_MENU MENU
+        	         <isNotEmpty property="ROL_GRP_ID" prepend="">
+        	                   ,tsyum_usr_role_matrix rolMat
+        	         </isNotEmpty>
+        	          WHERE  1 = 1
+        	            AND  SUBSTR(CONN.LOG_DATE, 1, 8) BETWEEN #FROM_DT# AND #TO_DT#
+        	            AND  MENU.MENU_ID = CONN.MENU_ID
+        	         <isNotEmpty property="USR_ID" prepend="AND">
+        	                   CONN.USR_ID = #USR_ID#
+        	         </isNotEmpty>
+        	         <isNotEmpty property="ROL_GRP_ID" prepend="AND">
+        	                   ROLMAT.ROL_GRP_ID = #ROL_GRP_ID#
+        	              AND  CONN.USR_ID = ROLMAT.USR_ID
+        	         </isNotEmpty>
+        	         <isNotEmpty property="MENU_ID" prepend="AND">
+                               CONN.MENU_ID = #MENU_ID#
+                      </isNotEmpty>
+                      GROUP BY CONN.MENU_ID,SUBSTR(CONN.LOG_DATE, 1, 8)
+                      )
+             GROUP BY MENU_ID
+	        ) LOG
+	        ,TSYPM_MENU MENU
+	        ,TSYPM_MENU UPMENU
+	        ,TSYPM_MENU UPUPMENU
+	        ,TSYPM_MENU UPUPUPMENU
+	 WHERE  1 = 1
+	   AND  MENU.MENU_ID = LOG.MENU_ID
+	   AND  MENU.UP_MENU_ID = UPMENU.MENU_ID
+	   AND  UPMENU.UP_MENU_ID = UPUPMENU.MENU_ID
+	   AND  UPUPMENU.UP_MENU_ID = UPUPUPMENU.MENU_ID
+	 ORDER BY UPUPUPMENU.SORT_NO, UPUPMENU.SORT_NO, UPMENU.SORT_NO, MENU.SORT_NO
+  </select>
+  <select id="getUsrMenuConnLogList_bak"  resultClass="hashMap" parameterClass="map" >
+  			SELECT
+				   co.corp_nm, dept.dept_nm, usr.usr_id, usr.usr_nm,
+				   upupupMenu.menu_id as SYSTEM_ID, upupupMenu.menu_nm as SYSTEM_NM,
+			       upupMenu.menu_id as SUB_SYSTEM_ID, upupMenu.menu_nm as SUB_SYSTEM_NM ,
+				   upmenu.up_menu_id, upmenu.MENU_NM as up_menu_nm,
+				   menu.MENU_ID, Menu.menu_NM, log.READCNT
+			FROM (
+			select  conn.usr_id, conn.MENU_ID ,  count(conn.menu_id) as readCNT
+			from tsylm_conn conn, tsypm_menu menu
+				 <isNotEmpty property="ROL_GRP_ID" prepend="">
+				 , tsyum_usr_role_matrix rolMat
+				 </isNotEmpty>
+			Where 1 = 1
+			  and TO_DATE(SUBSTR(conn.LOG_DATE, 1, 8), 'YYYYMMDD') between to_date( #FROM_DT#,'YYYYMMDD' )  and  to_date( #TO_DT#,'YYYYMMDD' ) +1
+			  and menu.menu_id = conn.menu_id
+			  <isNotEmpty property="USR_ID" prepend="AND">
+				 conn.USR_ID = #USR_ID#
+			  </isNotEmpty>
+			  <isNotEmpty property="MENU_ID" prepend="AND">
+				 conn.MENU_ID = #MENU_ID#
+			  </isNotEmpty>
+			  <isNotEmpty property="ROL_GRP_ID" prepend="AND">
+				 rolMat.rol_grp_id = #ROL_GRP_ID#
+				 and conn.usr_id = rolMat.usr_id
+			  </isNotEmpty>
+			Group by conn.usr_id, conn.MENU_ID
+			) log , tsypm_menu menu, tsypm_menu upmenu,
+			 	 tsypm_menu upupMenu ,tsypm_menu upupupMenu
+				 , tsyum_usr_mast usr, tsyco_corp_mast co, tsyum_dept_mast dept
+			WHERE 1 = 1
+			  and menu.menu_id = log.menu_id
+			  and menu.up_menu_id = upmenu.menu_id
+			  and upmenu.up_menu_id = upupMenu.menu_id
+			  and upupMenu.up_menu_id = upupupMenu.menu_id
+			  and log.usr_id = usr.usr_id
+			  and usr.crr_id = co.crr_id
+			  and usr.so_id = dept.so_id (+)
+			  and usr.dept_cd = dept.dept_cd (+)
+			Order by upupupmenu.sort_no , upupmenu.sort_no, upmenu.sort_no, menu.sort_no,
+					 co.corp_nm, dept.dept_nm,  usr.usr_nm
+  </select>
+
+  <!-- 사용자별 화면접속로그 조회 -->
+  <select id="getUsrMenuConnLogList"  resultClass="hashMap" parameterClass="map" >
+SELECT  /*+ USE_HASH(log) */
+        dept.dept_nm,
+        usr.usr_id, usr.usr_nm,
+	    upupupMenu.menu_id as SYSTEM_ID,
+        upupupMenu.menu_nm as SYSTEM_NM,
+        upupMenu.menu_id as SUB_SYSTEM_ID,
+        upupMenu.menu_nm as SUB_SYSTEM_NM ,
+	    upmenu.up_menu_id,
+        upmenu.MENU_NM as up_menu_nm,
+	    menu.MENU_ID,
+        menu.menu_NM,
+        log.log_date
+from  ( select conn.usr_id,
+                 conn.menu_id,
+                 conn.log_date
+         from    tsylm_conn conn,
+                 tsypm_menu menu
+         where   SUBSTR(conn.log_date, 1, 8) BETWEEN #FROM_DT# AND #TO_DT#
+         and     menu.menu_id = conn.menu_id
+			<isNotEmpty property="USR_ID" prepend="AND">
+				 conn.USR_ID = #USR_ID#
+			  </isNotEmpty>
+			  <isNotEmpty property="MENU_ID" prepend="AND">
+				 conn.MENU_ID = #MENU_ID#
+			  </isNotEmpty>
+			  and menu.menu_id = conn.menu_id
+      ) log,
+        tsypm_menu menu,
+        tsypm_menu upmenu,
+        tsypm_menu upupMenu,
+        tsypm_menu upupupMenu,
+        tsyum_usr_mast usr,
+        tsyum_dept_mast dept,
+        tsyum_emp_mast emp
+WHERE   menu.menu_id = log.menu_id
+and     menu.up_menu_id = upmenu.menu_id
+and     upmenu.up_menu_id = upupMenu.menu_id
+and     upupMenu.up_menu_id = upupupMenu.menu_id
+and     log.usr_id = usr.usr_id
+and     emp.DEPT_CD = dept.DEPT_CD
+and     emp.EMP_NO = usr.EMP_NO
+and     emp.SO_ID  = dept.SO_ID
+and     emp.USE_YN = 'Y'
+and     dept.USE_YN = 'Y'
+<![CDATA[ and     rownum <= 5000 ]]>
+order by log_date desc
+  </select>
+  <select id="getUsrConnLogList"  resultClass="hashMap" parameterClass="map" ><![CDATA[
+/* common-code.xml-getUsrConnLogList */
+SELECT  /*+ INDEX_DESC( LOG IX_TSYLM_USR_CONN_01 )  */
+        DEPT.DEPT_NM,
+        USR.USR_ID,
+        USR.USR_NM,
+        TO_CHAR( TO_DATE( SUBSTR( LOG.LOG_DATE, 1, 14 ), 'YYYYMMDDHH24MISS' ), 'YYYY-MM-DD HH24:MI:SS' ) AS LOG_DATE,
+        LOG.IP_ADDR,
+        LOG.MAC_ADDR,
+        LOG.SUCCESS_YN
+FROM    TSYLM_USR_CONN LOG,
+        TSYUM_USR_MAST USR,
+        TSYUM_DEPT_MAST DEPT,
+        TSYUM_EMP_MAST EMP
+WHERE   LOG.USR_ID = USR.USR_ID
+AND     EMP.USE_YN = 'Y'
+AND     LOG.USR_ID = nvl(#USR_ID#, LOG.USR_ID)
+AND     SUBSTR(LOG.LOG_DATE, 1, 8) BETWEEN #FROM_DT# AND #TO_DT#
+AND     EMP.DEPT_CD = DEPT.DEPT_CD(+)
+AND     EMP.EMP_NO = USR.EMP_NO
+AND     EMP.SO_ID = DEPT.SO_ID
+AND     ROWNUM <= 3000
+ ]]></select>
+
+   <!-- 20100404 권한ID(AUTH_GRP_ID)를 가져오는 부분 추가 하였음 -->
+   <!-- 20110901 Order by절 추가 ( 이유 : 복수의 권한을 가질 시, Y를 우선 적용 -->
+   <select id="getMenuBtnAuth"  resultClass="hashMap" parameterClass="map" >
+	 SELECT menu2.menu_ID ,upper(menu2.PGM_ID) as PGM_ID ,
+	  		 case when sum(decode(auth_ins,'Y',1,0)) > 0 then 'Y' else 'N' end as AUTH_INS ,
+			 case when sum(decode(auth_del,'Y',1,0)) > 0 then 'Y' else 'N' end as AUTH_DEL ,
+			 case when sum(decode(auth_upd,'Y',1,0)) > 0 then 'Y' else 'N' end as AUTH_UPD ,
+			 case when sum(decode(auth_sel,'Y',1,0)) > 0 then 'Y' else 'N' end as AUTH_SEL ,
+			 case when sum(decode(auth_exl,'Y',1,0)) > 0 then 'Y' else 'N' end as AUTH_EXL ,
+			 case when sum(decode(auth_prt,'Y',1,0)) > 0 then 'Y' else 'N' end as AUTH_PRT ,
+			 auth.AUTH_GRP_ID
+	  FROM TSYUM_USR_ROLE_MATRIX rol, tsyam_role_auth_matrix auth, tsyam_menu_auth_matrix menu,
+	  		tsypm_menu menu2
+	  WHERE  1 =1
+	  and rol.USR_ID = #USR_ID#
+	  and rol.ROL_GRP_ID = auth.rol_grp_id
+	  and auth.AUTH_GRP_ID  = menu.auth_grp_id
+	  and menu.menu_id = menu2.menu_id
+	  <isNotEmpty property="MENU_ID" prepend="AND">
+			menu2.menu_id = #MENU_ID#
+	  </isNotEmpty>
+	   <isNotEmpty property="PGM_ID" prepend="AND">
+			upper(menu2.PGM_ID) = upper(#PGM_ID#)
+	  </isNotEmpty>
+	  Group by  menu2.menu_ID, menu2.PGM_ID, auth.AUTH_GRP_ID
+	  ORDER BY auth_ins desc, auth_del desc, auth_upd desc, auth_sel desc, auth_exl desc, auth_prt desc
+  </select>
+  <select id="getFindUsrList2"  resultClass="hashMap" parameterClass="map" >
+	  select crr_id as CRR_ID, corp_nm , '0' as DEPT_CD, '' as DEPT_NM, '' as USR_ID,CORP_NM as USR_NM, 0 as cd_level
+	         ,CORP_NM as USR_NM2
+	  from tsyco_corp_mast
+	  where CRR_ID = #CRR_ID#
+	  union all
+	  select co.CRR_ID,'' as CORP_NM,  dept_cd , dept_nm , '' as USR_ID, dept_nm as USR_NM, 1 as cd_level
+	  		, dept_nm as USR_NM2
+	  from tsyum_dept_mast dept, tsyco_corp_mast co
+	  where co.CRR_ID = #CRR_ID#
+	   and co.SO_ID = dept.SO_ID
+	   and dept.USE_YN = 'Y'
+	  union all
+	  select CRR_ID, '' as CORP_NM,  dept.dept_cd, dept.dept_nm, USR_ID, USR_NM,
+	  		 case when length(dept.dept_cd) > 0 then 2
+			 	  else 1 end as cd_level
+			 , '['||USR_ID||']'||USR_NM as USR_NM2
+	  from tsyum_USR_MAST usr, tsyum_dept_mast dept
+	  where usr.CRR_ID  = #CRR_ID#
+	    and usr.SO_ID  = dept.so_id (+)
+		and usr.DEPT_CD = dept.DEPT_CD (+)
+		and usr.USE_YN = 'Y'
+	  Order by CRR_ID, DEPT_CD, CD_LEVEL, USR_NM
+  </select>
+    <select id="getSoDeptList"  resultClass="hashMap" parameterClass="map" >
+	  	select distinct LEVEL, dept.*
+		from tsyum_dept_mast dept
+		where so_id = #SO_ID#
+		  and use_yn = 'Y'
+		start with up_dept_cd is null
+		CONNECT BY PRIOR dept_cd  = up_dept_cd
+		ORDER SIBLINGS BY DEPT_CD
+  </select>
+  <select id="getSoSalesTeamList"  resultClass="hashMap" parameterClass="map" >
+		select distinct LEVEL, team.*, NVL(dept.dept_nm,'미지정') as DEPT_NM
+		from tsyco_sales_team team ,tsyum_dept_mast dept
+		where team.so_id = #SO_ID#
+		  and team.use_yn = 'Y'
+		  and team.so_id = dept.so_id (+)
+		  and team.dept_cd = dept.dept_cd (+)
+		start with up_sales_team_id is null
+		CONNECT BY PRIOR sales_team_id  = up_sales_team_id
+		ORDER SIBLINGS BY sales_team_id
+  </select>
+  <insert id="addSoSalesTeamList"  parameterClass="map" >
+	INSERT INTO TSYCO_SALES_TEAM
+	(SALES_TEAM_ID, SALES_TEAM_NM, UP_SALES_TEAM_ID, SO_ID,
+	 DEPT_CD, USE_YN, USE_START_DATE, USE_END_DATE, SORT_NO, REGR_ID, REG_DATE, CHGR_ID, CHG_DATE)
+	SELECT
+	(
+	select LPAD(SUBSTR(max(NVL(ID,'000')),4,3) + 1,3,'0')
+	from
+	(
+	select max(sales_team_id) as ID, 1 as seq
+	from tsyco_sales_team
+	where so_id = '329'
+	union all
+	select '000' , 2 as seq
+	from dual
+	order by seq
+	)
+	where rownum = 1
+	) as ID,
+	#SALES_TEAM_NM#, '', #SO_ID#,
+	#DEPT_CD#, #USE_YN#, to_date(#USE_START_DATE#,'YYYYMMDD'), to_date(#USE_END_DATE#,'YYYYMMDD'),
+	'' SORT_NO, #USR_ID#,sysdate, #USR_ID#, sysdate
+	FROM DUAL
+  </insert>
+  <update id="modSoSalesTeamList"  parameterClass="map" >
+     	update TSYCO_SALES_TEAM
+		SET (SALES_TEAM_NM, DEPT_CD, USE_YN, USE_START_DATE, USE_END_DATE,  CHGR_ID, CHG_DATE)
+		= (select #SALES_TEAM_NM#, #DEPT_CD#, #USE_YN#, to_date(#USE_START_DATE#,'YYYYMMDD'), to_date(#USE_END_DATE#,'YYYYMMDD'),
+		   #USR_ID#,sysdate from dual)
+		where 1 =1
+		  and SALES_TEAM_ID = #SALES_TEAM_ID#
+  </update>
+  <select id="getCrrNewId"  resultClass="hashMap" parameterClass="map" >
+		select 'C'||to_char(sysdate,'YYYY')||lpad(seq_corp_id.nextval,4,'0') as CRR_ID From dual
+  </select>
+  <select id="getSoList"  resultClass="hashMap" parameterClass="map" >
+        SELECT /*getSoList*/
+                SO.*
+               ,CO.CRR_ID
+          FROM  TSYCO_SO_MAST SO
+               ,TSYCO_CORP_MAST CO
+         WHERE  SO.SO_ID = CO.SO_ID (+)
+         ORDER  BY SO.SO_KIND ,SO_NM
+  </select>
+  <select id="getSpclList"  resultClass="hashMap" parameterClass="map" >
+		select dc.*, tp.RATE_ITM_NM
+		, SVCCMPS.SVC_STS_CD,  FCMCO_CODENAME('CMCU025', SVCCMPS.SVC_STS_CD) SVC_STS_NM
+		from tcmct_spcl_dc_info dc, tcmct_svc_cmps_info svcCmps, tp_rate_itm tp
+		where 1 = 1
+		  and dc.svc_cmps_id = svcCmps.svc_cmps_id
+		  and svcCmps.CTRT_ID = #CTRT_ID#
+		  and svcCmps.mstr_fl = 'Y'
+		  and dc.dc_rate_itm = tp.rate_itm_cd
+		  and tp.mstr_fl = '1'
+		order by dc.svc_cmps_id
+  </select>
+  <select id="getSvcCmpsList"  resultClass="hashMap" parameterClass="map" >
+		  	select svcCmps.*
+		    from tcmct_svc_cmps_info svcCmps
+		    where 1 = 1
+		      and svcCmps.CTRT_ID =  #CTRT_ID#
+		      and svcCmps.mstr_fl = 'Y'
+  </select>
+  <select id="getRateList"  resultClass="hashMap" parameterClass="map" >
+		  	select svcCmps.SVC_CMPS_ID, rate.* , prod.PROD_NM, svc.SVC_NM
+		    from tcmct_svc_cmps_info svcCmps,tp_rate_itm rate,tp_prod prod, tp_svc svc
+		    where 1 = 1
+		      and svcCmps.CTRT_ID = #CTRT_ID#
+		      and svcCmps.mstr_fl = 'Y'
+		      and svcCmps.PROD_CD = rate.prod_cd
+		      and svcCmps.SVC_CD = rate.svc_cd
+		      and rate.mstr_fl = '1'
+		      and prod.mstr_fl = '1'
+		      and svc.mstr_fl = '1'
+		      and rate.prod_cd = prod.prod_cd
+      		  and rate.svc_cd = svc.svc_cd
+      		   <isNotEmpty property="PROD_CD" prepend="AND">
+					rate.prod_cd = #PROD_CD#
+	 		   </isNotEmpty>
+	 		   <isNotEmpty property="SVC_CD" prepend="AND">
+					rate.SVC_cd = #SVC_CD#
+	 		   </isNotEmpty>
+	 		   <isNotEmpty property="RATE_ITM_NM" prepend="AND">
+					rate.RATE_ITM_NM LIKE  '%' ||#RATE_ITM_NM#|| '%'
+	 		   </isNotEmpty>
+      		  and rate.rate_ref_typ = '4'
+		    order by svcCmps.svc_cmps_id, rate.rate_itm_cd
+  </select>
+   <select id="getProdList"  resultClass="hashMap" parameterClass="map" >
+		  	select distinct prod.prod_cd, prod.prod_nm
+		    from tcmct_svc_cmps_info svcCmps,tp_rate_itm rate,tp_prod prod, tp_svc svc
+		    where 1 = 1
+		      and svcCmps.CTRT_ID = #CTRT_ID#
+		      and svcCmps.mstr_fl = 'Y'
+		      and svcCmps.PROD_CD = rate.prod_cd
+		      and svcCmps.SVC_CD = rate.svc_cd
+		      and rate.prod_cd = prod.prod_cd
+      		  and rate.svc_cd = svc.svc_cd
+      		  and rate.rate_ref_typ = '4'
+      		  and rate.mstr_fl = '1'
+		      and prod.mstr_fl = '1'
+		      and svc.mstr_fl = '1'
+		    order by prod.prod_nm
+  </select>
+  <select id="getSvcList"  resultClass="hashMap" parameterClass="map" >
+		  	select distinct prod.prod_cd,svc.svc_cd , svc.svc_nm
+		    from tcmct_svc_cmps_info svcCmps,tp_rate_itm rate,tp_prod prod, tp_svc svc
+		    where 1 = 1
+		      and svcCmps.CTRT_ID = #CTRT_ID#
+		      and svcCmps.mstr_fl = 'Y'
+		      and svcCmps.PROD_CD = rate.prod_cd
+		      and svcCmps.SVC_CD = rate.svc_cd
+		      and rate.prod_cd = prod.prod_cd
+      		  and rate.svc_cd = svc.svc_cd
+      		  and rate.rate_ref_typ = '4'
+      		  and rate.mstr_fl = '1'
+		      and prod.mstr_fl = '1'
+		      and svc.mstr_fl = '1'
+		    order by svc.svc_nm
+  </select>
+  <insert id="addSpclList"  parameterClass="map" >
+	insert into tcmct_spcl_dc_info
+	(SVC_CMPS_ID , DC_RATE_ITM,EFFECT_DT,FR_CNT,EXPIRAT_DT,TO_CNT,DC_CL,DISC_VAL,REGR_ID,REG_DATE,CHGR_ID,CHG_DATE)
+	values (#SVC_CMPS_ID# , #DC_RATE_ITM#,#EFFECT_DT#,#FR_CNT#,#EXPIRAT_DT#,
+        #TO_CNT#,#DC_CL#,#DISC_VAL#,#USR_ID#,sysdate, #USR_ID#,sysdate)
+
+  </insert>
+  <update id="modSpclList"  parameterClass="map" >
+    UPDATE tcmct_spcl_dc_info
+	set (EXPIRAT_DT,TO_CNT,DC_CL,DISC_VAL,CHGR_ID,CHG_DATE) =
+	 (select
+      #EXPIRAT_DT#,#TO_CNT#,#DC_CL#,#DISC_VAL#, #USR_ID#,sysdate
+      from dual)
+	where 1 =1
+	  and SVC_CMPS_ID = #SVC_CMPS_ID#
+	  and DC_RATE_ITM = #DC_RATE_ITM#
+	  and EFFECT_DT = #EFFECT_DT#
+	  and FR_CNT = #FR_CNT#
+  </update>
+    <delete id="delSpclList"  parameterClass="map" >
+	DELETE FROM tcmct_spcl_dc_info
+	where 1 =1
+	  and SVC_CMPS_ID = #SVC_CMPS_ID#
+	  and DC_RATE_ITM = #DC_RATE_ITM#
+	  and EFFECT_DT = #EFFECT_DT#
+	  and FR_CNT = #FR_CNT#
+  </delete>
+  <insert id="addSoList"  parameterClass="map" >
+	  insert into tsyco_so_mast(
+		SO_ID,SO_NM,SO_ENM,SO_TYPE,BIZ_REG_NO,CORP_REG_NO,
+		TEL_NO,FAXNO,ZIP_CD,ADDR,ADDR_EN,TAXOFF_CODE,
+		SO_ACCTCD,MAIN_SO_ID,MAIN_SO_ISP,MAIN_SO_DMC,REP_NM
+		,REP_NM_EN,AREA_CD,HMPG,EML,RMRK,USE_YN,SO_KIND,MAIN_SH_ID,
+		MAIN_SALES_ID  ,REGR_ID,REG_DATE,CHGR_ID,CHG_DATE)
+		values (
+		#SO_ID#,#SO_NM#,#SO_ENM#,#SO_TYPE#,#BIZ_REG_NO#,#CORP_REG_NO#,
+		#TEL_NO#,#FAXNO#,#ZIP_CD#,#ADDR#,#ADDR_EN#,#TAXOFF_CODE#,
+		#SO_ACCTCD#,#MAIN_SO_ID#,#MAIN_SO_ISP#,#MAIN_SO_DMC#,#REP_NM#,
+		#REP_NM_EN#,#AREA_CD#,#HMPG#,#EML#,#RMRK#,#USE_YN#,#SO_KIND#,#MAIN_SH_ID#,
+		#MAIN_SALES_ID#,#USR_ID#,sysdate,#USR_ID#,sysdate
+		)
+  </insert>
+	<update id="modSoList"  parameterClass="map" >
+    update tsyco_so_mast
+	set (SO_NM,SO_ENM,SO_TYPE,BIZ_REG_NO,CORP_REG_NO,
+        TEL_NO,FAXNO,ZIP_CD,ADDR,ADDR_EN,TAXOFF_CODE,
+        SO_ACCTCD,MAIN_SO_ID,MAIN_SO_ISP,MAIN_SO_DMC,REP_NM
+        ,REP_NM_EN,AREA_CD,HMPG,EML,RMRK,USE_YN,SO_KIND,MAIN_SH_ID,
+        MAIN_SALES_ID  ,CHGR_ID,CHG_DATE)
+    = (select
+        #SO_NM#,#SO_ENM#,#SO_TYPE#,#BIZ_REG_NO#,#CORP_REG_NO#,
+		#TEL_NO#,#FAXNO#,#ZIP_CD#,#ADDR#,#ADDR_EN#,#TAXOFF_CODE#,
+		#SO_ACCTCD#,#MAIN_SO_ID#,#MAIN_SO_ISP#,#MAIN_SO_DMC#,#REP_NM#,
+		#REP_NM_EN#,#AREA_CD#,#HMPG#,#EML#,#RMRK#,#USE_YN#,#SO_KIND#,#MAIN_SH_ID#,
+		#MAIN_SALES_ID#,#USR_ID#,sysdate from dual)
+	where so_Id = #SO_ID#
+  	</update>
+  	<insert id="addSoCorp"  parameterClass="map" >
+      INSERT INTO TSYCO_CORP_MAST(CRR_ID, CORP_NM, CORP_HSNM, CORP_ENAME, CORP_ESNM,
+	SO_YN, SO_ID, BIZ_REG_NO, TEL_NO, FAXNO, ZIP_CD, ADDR, ADDR_EN,
+	  REP_NM, REP_NM_EN, HMPG, EML, RMRK, USE_YN   , REGR_ID, REG_DATE, CHGR_ID, CHG_DATE)
+	VALUES
+	(
+	 'S'||to_char(sysdate,'YYYY')||lpad(seq_corp_id.nextval,4,'0'),
+	 #SO_NM#, substrb(#SO_NM#,0,20), #SO_ENM#, substrb(#SO_ENM#,0,20), 'Y', #SO_ID#, #BIZ_REG_NO#,
+	 #TEL_NO#, #FAXNO#, #ZIP_CD#, #ADDR#, #ADDR_EN#,
+	  #REP_NM#, #REP_NM_EN#, #HMPG#, #EML#, #RMRK#, #USE_YN#
+	 , #USR_ID#, sysdate, #USR_ID#, sysdate)
+  </insert>
+   <update id="modSoCorp"  parameterClass="map" >
+        UPDATE TSYCO_CORP_MAST
+		SET
+		CORP_NM         = #SO_NM#   ,
+		CORP_HSNM       = substrb(#SO_NM#,0,20)   ,
+		CORP_ENAME      =  #SO_ENM#   ,
+		CORP_ESNM       =  substrb(#SO_ENM#,0,20)   ,
+		BIZ_REG_NO      = #BIZ_REG_NO#   ,
+		TEL_NO          = #TEL_NO#   ,
+		FAXNO           = #FAXNO#   ,
+		ZIP_CD          = #ZIP_CD#   ,
+		ADDR            = #ADDR#   ,
+		ADDR_EN         = #ADDR_EN#   ,
+		REP_NM          = #REP_NM#   ,
+		REP_NM_EN       = #REP_NM_EN# ,
+		HMPG            = #HMPG#   ,
+		EML             = #EML#   ,
+		RMRK            = #RMRK#   ,
+		USE_YN          = #USE_YN# ,
+		CHGR_ID    = #USR_ID# ,
+		CHG_DATE  = sysdate
+		WHERE 1 = 1
+		  and SO_ID         = #SO_ID#
+  </update>
+  <select id="getSalesWeekList"  resultClass="hashMap" parameterClass="map" >
+		select *
+		from tsyco_week_cal
+		where std_year = #STD_YEAR#
+		  and std_month = lpad(#STD_MONTH#,2,'0')
+		  and start_week_yn = 'Y'
+		order by Week_no
+  </select>
+  <delete id="delSalesWeekList"  parameterClass="map" >
+	DELETE FROM tsyco_week_cal
+	where std_year = #STD_YEAR#
+	  and std_month = lpad(#STD_MONTH#,2,'0')
+  </delete>
+    <delete id="delSalesWeekList2"  parameterClass="map" >
+	DELETE FROM tsyco_week_cal
+	where STD_DT >= #START_MONTH_DT#
+	  and STD_DT &lt;= #END_MONTH_DT#
+  </delete>
+  <insert id="addSalesWeekList"  parameterClass="map" >
+	INSERT INTO TSYCO_WEEK_CAL
+	(STD_DT, STD_YEAR, STD_MONTH, WEEK_NO, START_WEEK_YN,
+	 START_WEEK_DT, END_WEEK_DT,  START_MONTH_DT, END_MONTH_DT,
+	 REGR_ID, REG_DATE, CHGR_ID, CHG_DATE)
+	select to_char(to_date(#START_WEEK_DT#,'YYYYMMDD') + no - 1,'yyyymmdd') as STD_DT,
+		   #STD_YEAR#,#STD_MONTH#,#WEEK_NO#,
+		   case when no = 1 then 'Y' end  as START_WEEK_YN,
+		   #START_WEEK_DT#,#END_WEEK_DT#,#START_MONTH_DT#,#END_MONTH_DT#,
+		   #USR_ID#,sysdate, #USR_ID#,sysdate
+	from copy_t
+	where no &lt;= to_number(to_date(#END_WEEK_DT#,'YYYYMMDD') - to_date(#START_WEEK_DT#,'YYYYMMDD'))+1
+  </insert>
+  <select id="getSoMBOList"  resultClass="hashMap" parameterClass="map" >
+		select NVL(mbo.mbo,0) as mbo, mbo.*, so.so_nm,
+		sum(mbo.mbo) over (partition by so.so_id, std_year, prod_grp,prod_typ) as year_total
+		from tsyco_so_mbo mbo, tsyco_so_mast so
+		where 1 = 1
+		  and mbo.std_year = #STD_YEAR#
+		  and mbo.so_id = so.so_id
+		  and so.use_yn = 'Y'
+		  <isNotEmpty property="SO_ID" prepend="AND">
+					so.so_id  = #SO_ID#
+	 	  </isNotEmpty>
+        order by so.so_id, mbo.STD_YEAR, mbo.PROD_GRP, mbo.PROD_TYP, STD_MONTH
+
+  </select>
+  <delete id="delSoMBOList"   parameterClass="map" >
+		Delete from tsyco_so_mbo mbo
+		where 1 = 1
+		  and mbo.std_year = #STD_YEAR#
+		  and mbo.STD_MONTH = #STD_MONTH#
+		  and mbo.so_id = #SO_ID#
+		  and prod_grp = #PROD_GRP#
+		  and Prod_typ =#PROD_TYP#
+  </delete>
+   <insert id="addSoMBOList"   parameterClass="map" >
+		insert into tsyco_so_mbo(
+		SO_ID, TYPE_YEAR, STD_YEAR, STD_MONTH, PROD_GRP, PROD_TYP, MBO, REGR_ID, REG_DATE)
+		values
+		(#SO_ID#, #TYPE_YEAR#, #STD_YEAR#, #STD_MONTH#, #PROD_GRP#, #PROD_TYP#, #MBO#, #USR_ID#, sysdate)
+  </insert>
+
+	<select id="getCommonCodeComboListNew" resultClass="hashMap" parameterClass="map">
+		SELECT
+			common_grp,
+			common_cd,
+			common_cd_nm AS common_cd_nm,
+			ref_code, ref_code2, ref_code3, default_yn, sort_no
+		FROM tsycm_code_detail
+		WHERE sys_flg = 'Y'
+			AND use_yn = 'Y'
+			AND common_grp <iterate property="commonCodeArray" open=" (" close=")" conjunction=", " prepend="IN">#commonCodeArray[]#</iterate>
+		ORDER BY common_grp, sort_no, common_cd
+	</select>
+
+
+    <select id="getFindPostList" resultClass="hashMap" parameterClass="map" >
+    SELECT SEQ,
+           ZIP_CD,
+           SIDO_NAME,
+           GUGUN_NM,
+           DONGMYON_NM,
+           LEE_NM,
+           BLDG_NM,
+           ST_BUNJI,
+           ED_BUNJI,
+           ADDR
+    FROM   TSYCM_POSTCODE
+    WHERE  1=1
+    AND    DONGMYON_NM LIKE '%'||#DONGMYON_NM#||'%'
+    <isNotEmpty property="ZIP_CD" prepend="AND">
+           ZIP_CD LIKE '%'||#ZIP_CD#||'%'
+    </isNotEmpty>
+  </select>
+
+
+    <select id="getFindPostList1" resultClass="hashMap" parameterClass="map" >
+    SELECT A.SEQ,
+           A.ZIP_CD,
+           A.SIDO_NAME,
+           A.GUGUN_NM,
+           A.DORO_NM,
+           A.BLDG_NO,
+           A.BLDG_NM,
+           A.ADDR
+    FROM   TSYCM_NEW_POSTCODE A
+    WHERE  1=1
+    AND    A.DORO_NM = #DORO_NM#
+        <isNotEmpty property="BLDG_NO" prepend="AND">
+           A.BLDG_NO = #BLDG_NO#
+        </isNotEmpty>
+        <isNotEmpty property="ZIP_CD" prepend="AND">
+           A.ZIP_CD LIKE '%'||#ZIP_CD#||'%'
+        </isNotEmpty>
+    </select>
+
+    <!-- [신주소우편체계] 구주소 우편번호를 검색한다  -->
+    <select id="getNFindPostList" resultClass="hashMap" parameterClass="map" >
+<!-- 가용정보 고도화 프로젝트 관련 변경(2019.02.19 윤준기) Start -->
+SELECT AA.ZIP,
+       AA.ZIP_SER_NUM,
+       AA.ZIP_SEQ,
+       AA.NEW_ZIP,
+       AA.NEW_ZIP_SER_NUM,
+       AA.ADDR_DETA_NM,
+       AA.ADDR_NM,
+       AA.CITY_NM,
+       AA.GU_NM,
+       AA.DONG_NM,
+       AA.HSNUM,
+       AA.ROAD_DETA_NM,
+       AA.ROAD_NM
+  FROM (SELECT /*+ OPT_PARAM('_OPTIMIZER_USE_FEEDBACK' 'FALSE') */
+               DISTINCT
+               A.OLD_ZIP AS ZIP,
+               A.OLD_ZIP_SER_NUM AS ZIP_SER_NUM,
+               0 AS ZIP_SEQ,
+               '' AS NEW_ZIP,
+               -1 AS NEW_ZIP_SER_NUM,
+               DECODE(NVL(A.OLD_BUILD_NO,'0'),'0'
+                                             ,REPLACE(A.OLD_ADDR,' '||A.OLD_BUILD_NO||DECODE(NVL(A.OLD_BUILD_SUB_NO,'0'),'0'
+                                                                                                                        ,''
+                                                                                                                        ,'-'||A.OLD_BUILD_SUB_NO),'')
+                                             ,A.OLD_ADDR) AS ADDR_DETA_NM,
+               REPLACE(A.OLD_ADDR,' '||A.OLD_BUILD_NO||DECODE(NVL(A.OLD_BUILD_SUB_NO,'0'),'0'
+                                                                                         ,''
+                                                                                         ,'-'||A.OLD_BUILD_SUB_NO),'') AS ADDR_NM,
+               A.SIDO_NM AS CITY_NM,
+               A.SIGUNGU_NM AS GU_NM,
+               A.OLD_DONG_NM AS DONG_NM,
+               DECODE(NVL(A.OLD_BUILD_NO,'0'),'0'
+                                             ,''
+                                             ,A.OLD_BUILD_NO||DECODE(NVL(A.OLD_BUILD_SUB_NO,'0'),'0'
+                                                                                                ,''
+                                                                                                ,'-'||A.OLD_BUILD_SUB_NO)) AS HSNUM,
+               TO_NUMBER(NVL(A.OLD_BUILD_NO,0)) AS OLD_BUILD_NO,
+               TO_NUMBER(NVL(A.OLD_BUILD_SUB_NO,0)) AS OLD_BUILD_SUB_NO,
+               '' AS ROAD_DETA_NM,
+               '' AS ROAD_NM
+          FROM MHVMVNO.TSYCM_COM_NEW_ZIP_CELL A,
+               (SELECT B.KEY_WORD_1,
+                       (CASE WHEN (INSTRB(B.KEY_WORD_2,'-') > 0)
+                             THEN TRIM(REPLACE(SUBSTRB(B.KEY_WORD_2,1,INSTRB(B.KEY_WORD_2,'-')),'-',''))
+                             ELSE B.KEY_WORD_2
+                         END) AS KEY_WORD_2,
+                       (CASE WHEN (INSTRB(B.KEY_WORD_2,'-') > 0)
+                             THEN TRIM(REPLACE(SUBSTRB(B.KEY_WORD_2,INSTRB(B.KEY_WORD_2,'-')+1),'-',''))
+                             ELSE ''
+                         END) AS KEY_WORD_3
+                  FROM (SELECT (CASE WHEN (INSTRB(B.KEY_WORD,' ') > 0)
+                                     THEN TRIM(SUBSTRB(B.KEY_WORD,1,INSTRB(B.KEY_WORD,' ')))
+                                     ELSE B.KEY_WORD
+                                 END) AS KEY_WORD_1,
+                               (CASE WHEN (INSTRB(B.KEY_WORD,' ') > 0)
+                                     THEN TRIM(SUBSTRB(B.KEY_WORD,INSTRB(B.KEY_WORD,' ')+1))
+                                     ELSE ''
+                                 END) AS KEY_WORD_2,
+                               (LENGTHB(TRIM(B.KEY_WORD)) - LENGTHB(REPLACE(TRIM(B.KEY_WORD),' ',''))) AS CONCT_CNT
+                          FROM (SELECT TRIM(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(#DONG_NM#),'     ',' '),'    ',' '),'   ',' '),'  ',' '))
+                                       AS KEY_WORD
+                                  FROM DUAL) B
+                        ) B
+                ) B
+         WHERE A.USE_YN = '1'
+           AND A.OLD_DONG_NM LIKE B.KEY_WORD_1||'%'
+           <!-- AND A.OLD_BUILD_NO LIKE NVL(B.KEY_WORD_2,A.OLD_BUILD_NO)||'%' -->
+           AND (CASE WHEN NVL(B.KEY_WORD_3,' ') = ' '
+                     THEN (CASE WHEN (A.OLD_BUILD_NO LIKE NVL(B.KEY_WORD_2,A.OLD_BUILD_NO)||'%')
+                                THEN 1
+                                ELSE 0
+                            END)
+                     ELSE (CASE WHEN (A.OLD_BUILD_NO = NVL(B.KEY_WORD_2,A.OLD_BUILD_NO))
+                                THEN 1
+                                ELSE 0
+                            END)
+                 END) = 1
+           <!-- AND A.OLD_BUILD_SUB_NO LIKE NVL(B.KEY_WORD_3,A.OLD_BUILD_SUB_NO)||'%' -->
+           AND A.OLD_BUILD_SUB_NO = NVL(B.KEY_WORD_3,A.OLD_BUILD_SUB_NO)
+     <isNotEmpty property="ZIP_CD" prepend="AND">
+               A.ZIP LIKE #ZIP_CD#||'%'
+     </isNotEmpty>
+        ) AA
+ ORDER BY AA.ADDR_NM, AA.OLD_BUILD_NO, AA.OLD_BUILD_SUB_NO
+<!-- 가용정보 고도화 프로젝트 관련 변경(2019.02.19 윤준기) End -->
+    </select>
+    <!-- [신주소우편체계] 신주소 우편번호를 검색한다 2017.03.23 superboom 힌트추가-->
+    <select id="getNFindPostList1" resultClass="hashMap" parameterClass="map" >
+        SELECT  /*+ INDEX(A TSYCM_COM_NEW_ZIP_IDX04) */ 
+                A.NEW_ZIP               ZIP             ,
+                '0'                     ZIP_SEQ         ,
+                A.NEW_ZIP               NEW_ZIP         ,
+                A.NEW_ZIP_SER_NUM       NEW_ZIP_SER_NUM ,
+                A.ADDR_DETA_NM          ADDR_DETA_NM    ,
+                A.ADDR_NM               ADDR_NM         ,
+                A.CITY_NM               CITY_NM         ,
+                A.GU_NM                 GU_NM           ,
+                A.DONG_NM               DONG_NM         ,
+                A.ROAD_NUM              HS_NUM          ,
+                A.ROAD_DETA_NM          ROAD_DETA_NM    ,
+                A.ROAD_NM               ROAD_NM
+        FROM    TSYCM_COM_NEW_ZIP A
+        WHERE   A.USE_YN    =   '1'
+        AND     ADDR_NM LIKE '%'||#DONG_NM#||'%'
+        <isNotEmpty property="ZIP_CD" prepend="AND">
+                NEW_ZIP LIKE '%'||#ZIP_CD#||'%'
+        </isNotEmpty>
+        ORDER BY
+                A.ADDR_DETA_NM      ,
+                A.NEW_ZIP           ,
+                A.NEW_ZIP_SER_NUM
+    </select>
+
+     <!-- 특정 업무 권한 체크 하는 컨트롤러(CMRC017) -->
+    <select id="getCheckAuthExceptForAny" parameterClass="map" resultClass="hashMap">
+    SELECT
+        DECODE(NVL((SELECT
+                        INSTR(REF_CODE, #USR_ID#)
+                    FROM
+                        TSYCM_CODE_DETAIL
+                    WHERE
+                        COMMON_GRP = 'CMRC017'
+                    AND COMMON_CD = #AUTH_COMMON_CD# ), 0), 0, 'N', 'Y') AS AUTH_EXCEPTION
+    FROM
+        DUAL
+    </select>
+    
+    <!-- 신용평가 업무 권한 체크 하는 컨트롤러(CMRC051) -->
+    <select id="getCheckAuthCertForAny" parameterClass="map" resultClass="hashMap">
+    SELECT
+        DECODE(NVL(( SELECT count(b.usr_id)
+                       FROM TSYCM_CODE_DETAIL a,
+                            TSYUM_USR_ROLE_MATRIX b
+                      WHERE a.COMMON_GRP = 'CMRC051' 
+                        AND a.COMMON_CD  = '01'
+                        AND a.USE_YN     = 'Y'
+                        AND b.usr_id     = #USR_ID# 
+                        AND a.REF_CODE   like '%'||b.ROL_GRP_ID||'%'  ), 0), 0, 'N', 'Y') AS AUTH_SMS,
+        DECODE(NVL((SELECT count(b.usr_id)
+                       FROM TSYCM_CODE_DETAIL a,
+                            TSYUM_USR_ROLE_MATRIX b
+                      WHERE a.COMMON_GRP = 'CMRC051' 
+                        AND a.COMMON_CD  = '02'
+                        AND a.USE_YN     = 'Y'
+                        AND b.usr_id     = #USR_ID# 
+                        AND a.REF_CODE   like '%'||b.ROL_GRP_ID||'%' ), 0), 0, 'N', 'Y') AS AUTH_CERT,
+        DECODE(NVL((SELECT count(b.usr_id)
+                       FROM TSYCM_CODE_DETAIL a,
+                            TSYUM_USR_ROLE_MATRIX b
+                      WHERE a.COMMON_GRP = 'CMRC051' 
+                        AND a.COMMON_CD  = '03'
+                        AND a.USE_YN     = 'Y'
+                        AND b.usr_id     = #USR_ID# 
+                        AND a.REF_CODE   like '%'||b.ROL_GRP_ID||'%' ), 0), 0, 'N', 'Y') AS AUTH_DOC        
+    FROM 
+        DUAL
+    </select>    
+
+    <select id="selectCommonCode" resultClass="java.util.LinkedHashMap" parameterClass="map">
+        SELECT   /*공통코드를 조회한다.(sy.cm.selectCommonCode)*/
+                 /*2013.12.20;최초작성;전수완*/
+                  common_cd
+                 ,common_cd_nm
+                 ,ref_code
+                 ,ref_code2
+                 ,ref_code3
+                 ,ref_code4
+        FROM      tsycm_code_detail
+        WHERE     common_grp = #COMMON_GRP#
+        AND       use_yn = 'Y'
+        <isNotNull prepend="and" property="COMMON_CD">
+                  common_cd = #COMMON_CD#
+        </isNotNull>
+        ORDER BY  sort_no ASC
+    </select>
+    
+    
+        
+    <select id="getUserRole" resultClass="hashMap" parameterClass="map">
+        SELECT /* 접속한 사용자가 공통코드 권한을 가지고있는지 조회한다. 정수근 */
+               (CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END) AS ROLE_YN
+        FROM   TSYUM_USR_ROLE_MATRIX
+        WHERE  USR_ID =#USR_ID#
+        AND    ROL_GRP_ID ='role903'
+    </select>
+    
+    
+    
+    <select id="getUserBanCheck" resultClass="hashMap" parameterClass="map">
+        SELECT T2.CRR_ID, T2.USR_ID, T3.REF_CODE
+          FROM TSYUM_USR_BAN T1  
+               ,TSYUM_USR_MAST T2
+               ,TSYCM_CODE_DETAIL T3
+         WHERE T1.ORG_ID   = T2.CRR_ID
+           AND T1.ACT_DTTM > TO_CHAR(SYSDATE,'YYYYMMDD') || '000000'
+           AND T1.MSTR_FL  = 'Y'
+           AND T2.USR_ID   = #USR_ID#
+           AND T3.COMMON_GRP = 'CMST001'
+           AND T3.COMMON_CD  = '03'
+    </select>
+    
+    
+    
+</sqlMap>

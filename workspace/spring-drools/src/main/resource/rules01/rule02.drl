@@ -1,0 +1,289 @@
+//created on: 2019. 12. 4
+package rule02
+
+//list any import classes here.
+import com.cjhv.mvno.drools.schedule.partner.PartnerCommon;
+import com.cjhv.mvno.drools.batch.BatchInfo;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.cjhv.mvno.drools.util.DateUtil;
+import java.text.SimpleDateFormat;
+//declare any global variables here
+global java.util.HashMap batchMapG;
+
+rule "시작 파라미터 Manual 모드"
+    when
+        $bachTpCd : PartnerCommon(BTCH_TP_CD == "MANUAL")
+    then
+        System.out.println("====================================================");
+        System.out.println("==================시작 파라미터 Manual 모드=============");
+        System.out.println("====================================================");
+        $bachTpCd.setSTD_DT($bachTpCd.getMANUAL_DATE());
+        String stdDt = $bachTpCd.getMANUAL_DATE();
+        insert($bachTpCd);
+end
+
+rule "시작 파라미터 AutoExe 모드"
+    when
+        $bachTpCd : PartnerCommon(BTCH_TP_CD == "AUTOEXE_DATE")
+    then
+        System.out.println("====================================================");
+        System.out.println("==================시작 파라미터 AutoExe 모드============");
+        System.out.println("====================================================");    
+        String stdDt = $bachTpCd.getBatchDate().get("AUTOEXE_DATE").toString();
+        $bachTpCd.setSTD_DT(stdDt);
+        insert($bachTpCd);
+end
+
+rule "작업단위키 조회"
+    when 
+        $bachUp : PartnerCommon(PROGRAM_ID != "")
+    then
+        System.out.println("====================================================");
+        System.out.println("===============작업단위키 조회==========================");
+        System.out.println("====================================================");      
+        HashMap<String, Object> batchMap = $bachUp.getBatchInfo();
+        batchMap.put("systemId", $bachUp.getSystemId());
+        batchMap.put("programId", $bachUp.getPROGRAM_ID());
+        batchMap.put("busDiv", $bachUp.getBUS_DIV());
+        $bachUp.setOPRTUNI_KEY($bachUp.getOprtUnitKey(batchMap));
+        batchMap.put("SORC_SYS_ID", $bachUp.getSystemId());
+        batchMap.put("OPRT_UNIT_KEY",$bachUp.getOPRTUNI_KEY());
+        batchMap.put("BUS_DIV", $bachUp.getBUS_DIV());
+        batchMapG.put("bachMap",batchMap);
+        insert($bachUp);
+end     
+
+rule "제휴사연동 적립 회계정보 생성"
+    when 
+        $bachInfo : PartnerCommon(OPRTUNI_KEY != "")
+    then
+        System.out.println("====================================================");
+        System.out.println("===============제휴사연동 적립 회계정보 생성===============");
+        System.out.println("====================================================");       
+        String currMonth = $bachInfo.getSTD_DT().substring(0, 6); //당월
+        
+        String prevMonth = DateUtil.addMonth(new SimpleDateFormat("yyyyMM").parse(currMonth), -1).toString().replaceAll("-", "").substring(0, 6); //전월
+        String currMonthFrstDay = currMonth + "01"; //당월1일
+        String prevMonthFrstDay = prevMonth + "01"; //전월1일 
+        String prevMonthlastDay = DateUtil.getYYYYMMDD(DateUtil.addDay(DateUtil.getDateYYYYMMDD(currMonth+"01"), -1)); //전월말일
+        
+        ((HashMap)batchMapG.get("bachMap")).put("PREV_MONTH", prevMonth);
+        ((HashMap)batchMapG.get("bachMap")).put("PREV_MONTH_FRST_DAY", prevMonthFrstDay);
+        ((HashMap)batchMapG.get("bachMap")).put("PREV_MONTH_LAST_DAY", prevMonthlastDay);
+        ((HashMap)batchMapG.get("bachMap")).put("PARTNER_CD", "01");  //제휴사코드 - 하나은행 
+        List tcmcePartnerIfInfoList = $bachInfo.getPartnerSaveAcct(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TCMCE_PARTNER_IF_INFO SELECT COUNT ["+tcmcePartnerIfInfoList.size()+"]");
+        insert($bachInfo);
+       
+end   
+
+rule "제휴사연동 입금정보 수정 처리"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("===============제휴사연동 입금정보 수정 처리===============");
+        System.out.println("=====================================================");     
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getHanaPartnerIfPay(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+end 
+  
+rule "제휴사연동 ERP회계연동 처리"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("===============제휴사연동 ERP회계연동 처리================");
+        System.out.println("=====================================================");     
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getPartnerSaveAcctErp(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+end  
+
+rule "제휴사연동 적립 회계정보 처리결과 수정"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("==============제휴사연동 적립 회계정보 처리결과 수정=========");
+        System.out.println("=====================================================");      
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getPartnerSaveAcctUPDATE(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+end
+
+rule "제휴사연동정보 캐시백처리상태 수정"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("===========제휴사연동정보 캐시백처리상태 수정===============");
+        System.out.println("=====================================================");    
+        ((HashMap)batchMapG.get("bachMap")).put("CB_PROC_STATUS",       "S");
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getHanaPartnerIfCb(((HashMap)batchMapG.get("bachMap")));
+        //System.out.println("TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+        insert($bachInfo);
+        System.out.println("====================================================");
+        System.out.println("===========TB_DATA_LDDNG_STTUS_DTLS 적재 중복확인======");
+        System.out.println("=====================================================");        
+end
+
+rule "TB_DATA_LDDNG_STTUS_DTLS 적재 중복확인"
+    when 
+        $bachInfo : PartnerCommon()
+        $result : PartnerCommon($bachInfo.getTbDataLddngSttusDtlsDuplCnt((HashMap)batchMapG.get("bachMap")) > 0  )
+        //((HashMap)batchMapG.get("bachMap")).put("ERP_DUP",cnt)
+        //PartnerCommon().selectTbDataLddngSttusDtlsCnt((HashMap)batchMapG.get("bachMap"))
+        //$result : PartnerCommon($bachInfo.getSTD_DT() == "DD")  
+        //$result : (Integer)$bachInfo.selectTbDataLddngSttusDtlsCnt((HashMap)batchMapG.get("bachMap"))
+    then
+        System.out.println("====================================================");
+        System.out.println("==========TB_DATA_LDDNG_STTUS_DTLS 적재 중복확인=======");
+        System.out.println("=====================================================");    
+        System.out.println("중복없음 --> " +  $bachInfo.getTbDataLddngSttusDtlsDuplCnt((HashMap)batchMapG.get("bachMap")));
+        $bachInfo.setERP_DUP(true);
+        insert($bachInfo);
+end
+
+rule "TB_DATA_LDDNG_STTUS_DTLS 적재중복"
+    when 
+        $bachInfo : PartnerCommon()
+        $r : PartnerCommon( $bachInfo.isERP_DUP() == true)
+    then    
+        System.out.println("====================================================");
+        System.out.println("==========TB_DATA_LDDNG_STTUS_DTLS 적재 중복확인=======");
+        System.out.println("=====================================================");      
+        List tblepAcctSlipLNKGSapList = $bachInfo.getTbDataLddngSttusDtls(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TBLEP_ACCT_SLIP_LNKG_SAP COUNT ["+tblepAcctSlipLNKGSapList.size()+"]");
+end
+
+rule "TB_DATA_LDDNG_STTUS_DTLS 적재"
+    when 
+        $bachInfo : PartnerCommon()
+        $r : PartnerCommon( $bachInfo.isERP_DUP() == false)
+    then    
+        System.out.println("====================================================");
+        System.out.println("==========TB_DATA_LDDNG_STTUS_DTLS 적재==============");
+        System.out.println("=====================================================");     
+        List tblepAcctSlipLNKGSapList = $bachInfo.getTbDataLddngSttusDtls(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TBLEP_ACCT_SLIP_LNKG_SAP COUNT ["+tblepAcctSlipLNKGSapList.size()+"]");
+        insert($bachInfo);
+end
+
+rule "환수 작업단위키 조회"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("==================환수 작업단위키 조회===================");
+        System.out.println("=====================================================");      
+        HashMap<String, Object> rParam01 = new HashMap<String, Object>();
+        
+        String programId = "CJMFI055";
+        ((HashMap)batchMapG.get("bachMap")).put("programId", programId);
+        ((HashMap)batchMapG.get("bachMap")).put("oprtUnitKey", $bachInfo.getOprtUnitKey(((HashMap)batchMapG.get("bachMap"))));
+        insert($bachInfo);
+end    
+
+
+rule "제휴사연동 환수 회계정보 생성"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("===========제휴사연동정보 캐시백처리상태 수정===============");
+        System.out.println("=====================================================");    
+        ((HashMap)batchMapG.get("bachMap")).put("WORK_TYPE",            "02");
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getDchgInfo(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+        ((HashMap)batchMapG.get("bachMap")).put("PROC_CNT",tcmcePartnerIfAcctInfoList.size());
+        System.out.println("====================================================");
+        System.out.println("===========전월등록 적립금소멸 대상 UPDATE===============");
+        // PartnerRsvPatErpSendSchdule 배치 
+        // 전원보류건 상태에 따라 재처리등록
+        // 환수처리를 같이 처리하기 위해 중복오류 방지로직
+        System.out.println("======기등록 환수대상 oprtUnitKey 업데이트 처리===========");
+        
+        List tcmcePartnerIfAcctInfoUpdateList = $bachInfo.getDchgUpdateInfo(((HashMap)batchMapG.get("bachMap"))); 
+        insert($bachInfo);
+end
+
+rule "제휴사연동 환수 ERP회계연동 처리"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("===========제휴사연동 환수 ERP회계연동 처리===============");
+        System.out.println("=====================================================");
+        
+                    //적립대상 조회             
+        ((HashMap)batchMapG.get("bachMap")).put("IF_KIND",         "05");  
+        ((HashMap)batchMapG.get("bachMap")).put("IF_KIND_D",       "17");
+        ((HashMap)batchMapG.get("bachMap")).put("SEQ_NSMS",        "1");           
+        ((HashMap)batchMapG.get("bachMap")).put("CD_SLIPTYPE",     "NC");  
+        ((HashMap)batchMapG.get("bachMap")).put("CD_COMPANY",      "1000");
+        ((HashMap)batchMapG.get("bachMap")).put("CD_ACCNTUNIT",    "A001");
+        ((HashMap)batchMapG.get("bachMap")).put("CD_PLANT",        "48");  
+        ((HashMap)batchMapG.get("bachMap")).put("CD_WRITER",       "004555");  
+        ((HashMap)batchMapG.get("bachMap")).put("CD_WRITERDEPT",   "E00030");  
+        ((HashMap)batchMapG.get("bachMap")).put("CD_BELONGDEPT",   "E00030");          
+        ((HashMap)batchMapG.get("bachMap")).put("CD_ITEM",         "S0300002");
+                    
+        ((HashMap)batchMapG.get("bachMap")).put("RECEIVER_DET",    "02");
+        List tblepAcctSlipLNKGSAPInfoList = $bachInfo.getIfSlipLnkgSap(((HashMap)batchMapG.get("bachMap")));
+        //System.out.println("TBLEP_ACCT_SLIP_LNKG_SAP COUNT ["+tblepAcctSlipLNKGSAPInfoList.size()+"]");
+        
+        insert($bachInfo);
+end
+
+rule "TB_DATA_LDDNG_STTUS_DTLS 적재 중복확인01"
+    when 
+        $bachInfo : PartnerCommon()
+        $result : PartnerCommon($bachInfo.getTbDataLddngSttusDtlsDuplCnt((HashMap)batchMapG.get("bachMap")) > 0  )
+        //((HashMap)batchMapG.get("bachMap")).put("ERP_DUP",cnt)
+        //PartnerCommon().selectTbDataLddngSttusDtlsCnt((HashMap)batchMapG.get("bachMap"))
+        //$result : PartnerCommon($bachInfo.getSTD_DT() == "DD")  
+        //$result : (Integer)$bachInfo.selectTbDataLddngSttusDtlsCnt((HashMap)batchMapG.get("bachMap"))
+    then
+        System.out.println("====================================================");
+        System.out.println("==========TB_DATA_LDDNG_STTUS_DTLS 적재 중복확인=======");
+        System.out.println("=====================================================");    
+        System.out.println("중복없음 --> " +  $bachInfo.getTbDataLddngSttusDtlsDuplCnt((HashMap)batchMapG.get("bachMap")));
+        $bachInfo.setERP_DUP(true);
+        insert($bachInfo);
+end
+rule "TB_DATA_LDDNG_STTUS_DTLS 적재01"
+    when 
+        $bachInfo : PartnerCommon()
+        $r : PartnerCommon( $bachInfo.isERP_DUP() == false)
+    then    
+        System.out.println("====================================================");
+        System.out.println("==========TB_DATA_LDDNG_STTUS_DTLS 적재==============");
+        System.out.println("=====================================================");     
+        List tblepAcctSlipLNKGSapList = $bachInfo.getTbDataLddngSttusDtls(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("TBLEP_ACCT_SLIP_LNKG_SAP COUNT ["+tblepAcctSlipLNKGSapList.size()+"]");
+        insert($bachInfo);
+end
+
+rule "제휴사연동 적립 회계정보 처리결과 수정01"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("==============제휴사연동 적립 회계정보 처리결과 수정=========");
+        System.out.println("=====================================================");      
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getPartnerSaveAcctUPDATE(((HashMap)batchMapG.get("bachMap")));
+        System.out.println("(제휴사연동 회계정보 테이블)TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+end
+
+rule "제휴사연동정보 캐시백처리상태 수정01"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("===========제휴사연동정보 캐시백처리상태 수정===============");
+        System.out.println("=====================================================");    
+        ((HashMap)batchMapG.get("bachMap")).put("CB_PROC_STATUS",       "R");
+        List tcmcePartnerIfAcctInfoList = $bachInfo.getHanaPartnerIfCb(((HashMap)batchMapG.get("bachMap")));
+        //System.out.println("TCMCE_PARTNER_IF_ACCT_INFO COUNT ["+tcmcePartnerIfAcctInfoList.size()+"]");
+end

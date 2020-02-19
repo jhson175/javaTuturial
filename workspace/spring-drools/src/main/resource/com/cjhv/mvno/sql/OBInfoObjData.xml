@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="ob.on.common">   
+    <!-- 온라인 OBINO 가져오기 -->
+    <select id="getOnineOBInfo" parameterClass="java.util.Map" resultClass="java.util.HashMap">
+         /* ob.on.common.getOnineOBInfo */
+      SELECT ORDER_NO
+        FROM MHVMVNO.TCMOB_ORDER_INFO
+       WHERE 1 = 1
+        <isNotEmpty prepend="AND" property="ORDER_NO"> 
+        ORDER_NO = #ORDER_NO#   
+        </isNotEmpty>
+    </select>    
+   
+</sqlMap>

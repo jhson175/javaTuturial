@@ -1,0 +1,72 @@
+//created on: 2019. 12. 4
+package rule02
+
+//list any import classes here.
+import com.cjhv.mvno.drools.ObInfo;
+import com.sample.DroolsTest.Message;
+
+
+//declare any global variables here
+
+declare enum DaysOfWeek
+     SUN("Sunday"),MON("Monday"),TUE("Tuesday");
+     fullName : String
+end
+
+declare Person
+     name : String
+end 
+     
+rule "date check1"
+    date-expires   "29-Dec-2019"
+    when
+    then
+        System.out.println("date check1");
+end
+
+rule "date check2"
+salience 51
+    date-expires   "29-Dec-2019"
+    when
+    then
+        Person p = new Person();
+        p.setName("dd");
+        System.out.println(p.getName());
+        System.out.println("date check2");
+        System.out.println(DaysOfWeek.SUN);
+end
+        
+rule "Gruop01 Rule"
+lock-on-active
+  agenda-group "Gruop01"
+    when
+        m : Message( status == Message.HELLO, myMessage : message )
+    then
+        System.out.println( "OBInfo EXESTS" );
+        m.setMessage ( "Goodby cruel world");
+        m.setStatus(Message.GOODBYE);
+        update( m );
+end
+
+
+
+rule "Gruop02 First Rule"
+  agenda-group "OBInfo Group02"
+    when
+        $ob : ObInfo(obNo != null)
+    then
+        System.out.println($ob.getObNo());
+        update( $ob );
+end
+
+rule "Gruop01 Second Rule"
+no-loop
+  agenda-group "Gruop01"
+    when
+        m : Message( status == Message.GOODBYE, myMessage : message )
+    then
+        System.out.println("MESSAGE GOODBYE12334");
+         m.setStatus(Message.GOODBYE);
+        update(m);
+        
+end

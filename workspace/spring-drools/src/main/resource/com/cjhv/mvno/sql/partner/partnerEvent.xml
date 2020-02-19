@@ -1,0 +1,2525 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+
+<!-- 제휴사 연동 파트너정보 관리 -->
+<sqlMap namespace="partner.partnerEvent">
+    
+    
+    <select id="getBatchDateLength" resultClass="Integer" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getBatchDateLength */
+        SELECT  TO_NUMBER(LENGTHB(REF_CODE)) AS BATCH_DATE_LENGTH
+        FROM    TSYCM_CODE_DETAIL
+        WHERE   COMMON_GRP = #COMMON_GRP#
+        AND     COMMON_CD = #BATCH_ID#
+        AND     SYS_FLG = 'Y'
+        AND     USE_YN  = 'Y'
+    </select>
+    
+    <!-- 배치 일자 조회 -->
+    <select id="getBatchDate1" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getBatchDate */      
+        SELECT TO_CHAR(         ADD_MONTHS(TO_DATE(#BATCH_YMD#, 'YYYYMMDD'),-1)  , 'YYYYMM')           AS BATCH_YM 
+             , TO_CHAR(         ADD_MONTHS(TO_DATE(#BATCH_YMD#, 'YYYYMMDD'),-1)  , 'YYYYMM') || '01'   AS BATCH_STD_YMD 
+             , TO_CHAR(LAST_DAY(ADD_MONTHS(TO_DATE(#BATCH_YMD#, 'YYYYMMDD'),-1)) , 'YYYYMMDD')         AS BATCH_END_YMD 
+          FROM DUAL       
+    </select>
+    
+    <select id="getBatchDate" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getBatchDate */       
+        SELECT  TO_CHAR(TRUNC(SYSDATE, 'HH')+1/24/60/60, 'YYYYMMDDHH24MISS') AS AUTOEXE_DATE
+        FROM    DUAL
+    </select>
+    
+    <!-- 해당요금제 사용중인 CandyM 정보가져오기 -->
+    <select id="getPartenrInsertList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getPartenrInsertList */
+     <![CDATA[ 
+     SELECT C1.CTRT_ID           
+           ,FSYCO_DECRYPT(C2.IPIN_NUM,'TCMCE_PARTNER_IF_INFO','CI',20) CI
+           ,C1.SVC_TEL_NO
+           ,C2.CUST_ID
+           ,C2.CUST_NM 
+           ,C1.CTRT_STAT 
+           ,M.VAL_CHK
+           ,M.CTRT_TERM_DT
+           ,M.ORDER_ID  
+           ,M.FIRST_ORDER_TP         
+           ,M.FIRST_ORDER_TP_DT
+           ,(SELECT PROD_NM FROM TP_PROD WHERE PROD_CD = M.FIRST_BASIC_PROD_CD) PROD_NM 
+           ,(SELECT D1.REF_CODE FROM TSYCM_CODE_DETAIL D1 WHERE D1.COMMON_GRP = 'CMCE103' AND D1.COMMON_CD = M.FIRST_BASIC_PROD_CD) SAVE_PER 
+       FROM (
+             SELECT /*+ LEADING(C1) INDEX(C1 IX_TCMCT_CTRT_INFO_07) */
+                    ROW_NUMBER() OVER(PARTITION BY C1.CUST_ID ORDER BY C1.ACT_DTTM DESC) AS R_NO
+                   ,C1.CTRT_ID
+                   ,C1.TERM_DT CTRT_TERM_DT
+                   ,C1.ORDER_ID 
+                   ,C1.ORDER_TP FIRST_ORDER_TP      
+                   ,C1.ACT_DTTM FIRST_ORDER_TP_DT    
+                   ,C1.BASIC_PROD_CD FIRST_BASIC_PROD_CD
+                   ,(CASE WHEN ORDER_TP = '208' THEN 'CASE_1' 
+                          WHEN (SELECT COUNT(*) FROM TCMCT_OCTRT_INFO T1 WHERE T1.CTRT_ID = C1.CTRT_ID AND T1.ORDER_TP = C1.ORDER_TP AND T1.IF_SUC_YN = 'Y') > 0 THEN 'CASE_2' 
+                          WHEN TO_CHAR(SYSDATE,'YYYYMMDD') > TO_CHAR(TO_DATE(ACT_DTTM,'YYYYMMDDHH24MISS'),'YYYYMMDD') THEN 'CASE_3' 
+                          ELSE 'N' 
+                      END) VAL_CHK
+               FROM MHVMVNO.TCMCT_CTRT_INFO C1                                                                                
+              WHERE ACT_DTTM >= TO_CHAR(SYSDATE-7,'YYYYMMDDHH24MISS') --개통 7일이내   
+                AND C1.SO_ID='00' -- KT  
+                AND ORDER_TP IN('101','103','109','208') -- 신규,번이,기변,요금제변경  
+                AND EXISTS (SELECT 'Y' 
+                      FROM TSYCM_CODE_DETAIL D1 
+                     WHERE D1.COMMON_GRP = 'CMCE103' 
+                       AND D1.COMMON_CD = C1.BASIC_PROD_CD 
+                       AND D1.USE_YN = 'Y') -- 해당요금제에 해당하는경우        
+            ) M
+           ,MHVMVNO.TCMCT_CTRT_INFO C1  
+           ,MHVMVNO.TCMCU_CUST_INFO C2 
+      WHERE M.R_NO=1
+        AND M.CTRT_ID = C1.CTRT_ID
+        AND C1.CUST_ID = C2.CUST_ID 
+        AND C1.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+        AND C1.CTRT_STAT NOT IN ('50', '90') -- 사용중인 회선 
+        AND INSTR(M.VAL_CHK,'CASE') > 0 --CASE 단어가 리턴되면 성공             
+        AND NOT EXISTS (SELECT 'Y'                                                                       
+                          FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                           
+                         WHERE P1.CTRT_ID = C1.CTRT_ID -- 파트너정보에 CTRT_ID가 없는경우  
+                           AND P1.CTRT_USE_YN = 'Y' -- 유효한 계약
+                           AND P1.PARTNER_CD='01' )                                                      
+                    
+        ]]>    
+    </select>    
+    
+    <!-- 해당요금제 사용중인 파트너 정보가져오기 -->
+    <select id="getPartenrInfo" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getPartenrInfo */
+     <![CDATA[ 
+     SELECT * 
+       FROM (  
+            SELECT TO_CHAR(P1.TCMCE_PARTNER_IF_INFO_SEQ) TCMCE_PARTNER_IF_INFO_SEQ
+                  ,P1.CI              
+                  ,P1.CTRT_ID 
+                  ,P1.CTRT_USE_YN
+                  ,P1.ACC_USE_YN
+                  ,P1.ACC_NO
+                  ,P1.CTRT_TERM_DT
+                  ,P1.ORDER_ID
+                  ,P1.FIRST_ORDER_TP
+                  ,P1.COMBINE_USE_YN
+                  ,(SELECT COUNT(*) FROM MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST S1 WHERE S1.TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ) SEND_CNT 
+                  ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO                                                                        
+              FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                           
+             WHERE P1.CI = FSYCO_ENCRYPT(#CI#,'TCMCE_PARTNER_IF_INFO','CI',20)
+               AND P1.PARTNER_CD=#PARTNER_CD#   
+            )  
+      WHERE R_NO = 1                    
+        ]]>    
+    </select>
+    
+    <!-- TCMCE_PARTNER_IF_INFO_SEQ를 가져온다. -->    
+    <select id="getPartnerIfMsgInfoSeq" parameterClass="java.util.Map" resultClass="integer" >  
+    /* partnerEvent.xml - partner.partnerEvent.getPartnerIfMsgInfoSeq */    
+        SELECT TO_CHAR(HVMVNO.TCMCE_PARTNER_IF_INFO_SEQ.NEXTVAL,'999999999999') SAVE_REQ_SEQ FROM DUAL              
+    </select>     
+    
+    <!-- PARTNER (TCMCE_PARTNER_IF_INFO)을 저장한다. -->
+    <insert id="insertHanaPartner" parameterClass="java.util.Map" >        
+        INSERT INTO MHVMVNO.TCMCE_PARTNER_IF_INFO
+              (TCMCE_PARTNER_IF_INFO_SEQ,P_TCMCE_PARTNER_IF_INFO_SEQ, PARTNER_CD,CI,APC_NO
+              ,ACC_NO,ACC_USE_YN,ACC_START_DT,ACC_END_DT,COMBINE_USE_YN
+              ,COMBINE_START_DT,COMBINE_END_DT,CTRT_ID
+              ,ACC_STATUS,REG_ID,REG_DT,CHG_ID,CHG_DT
+              ,CTRT_USE_YN,CTRT_START_DT,CTRT_END_DT,CTRT_TERM_DT,ORDER_ID,FIRST_ORDER_TP,FIRST_ORDER_TP_DT
+              ,ACC_PROD_CD, REMARK, SAVE_PER) 
+        VALUES (
+                #TCMCE_PARTNER_IF_INFO_SEQ#, 
+                #P_TCMCE_PARTNER_IF_INFO_SEQ#, 
+                #PARTNER_CD#, 
+                FSYCO_ENCRYPT(#CI#,'TCMCE_PARTNER_IF_INFO','CI',20), 
+                #APC_NO#,
+                
+                #ACC_NO#,
+                NVL(#ACC_USE_YN#,'N'), 
+                #ACC_START_DT#,
+                #ACC_END_DT#, 
+                NVL(#COMBINE_USE_YN#,'N'), 
+                
+                #COMBINE_START_DT#,  
+                #COMBINE_END_DT#,                           
+                NVL(#CTRT_ID#,''),                    
+                               
+                '',
+                #SYNC_ID#, 
+                SYSDATE, 
+                #SYNC_ID#, 
+                SYSDATE,
+                
+                NVL(#CTRT_USE_YN#,'N'),
+                #CTRT_START_DT#,
+                #CTRT_END_DT# , 
+                #CTRT_TERM_DT# ,
+                #ORDER_ID#,               
+                #FIRST_ORDER_TP#,
+                #FIRST_ORDER_TP_DT#,
+                
+                #ACC_PROD_CD#,
+                #REMARK#,
+                #SAVE_PER# 
+                )
+    </insert> 
+    
+    <insert id="updateHanaPartner" parameterClass="java.util.Map" >   
+    /* partnerEvent.xml - partner.partnerEvent.updateHanaPartner */       
+        UPDATE MHVMVNO.TCMCE_PARTNER_IF_INFO A
+           SET CHG_ID = #SYNC_ID#
+              ,CHG_DT = SYSDATE   
+              <isNotEmpty property="P_TCMCE_PARTNER_IF_INFO_SEQ">
+              ,P_TCMCE_PARTNER_IF_INFO_SEQ = #P_TCMCE_PARTNER_IF_INFO_SEQ#
+              </isNotEmpty>                    
+              <isNotEmpty property="CTRT_ID">
+              ,CTRT_ID = #CTRT_ID#
+              </isNotEmpty>
+              <isNotEmpty property="CTRT_USE_YN">
+              ,CTRT_USE_YN = #CTRT_USE_YN#
+              </isNotEmpty>
+              <isNotEmpty property="CTRT_START_DT">
+              ,CTRT_START_DT = #CTRT_START_DT# 
+              </isNotEmpty>
+              <isNotEmpty property="CTRT_END_DT">
+              ,CTRT_END_DT = #CTRT_END_DT#  
+              </isNotEmpty>
+              <isNotEmpty property="ACC_NO">
+              ,ACC_NO = #ACC_NO#
+              </isNotEmpty>
+              <isNotEmpty property="ACC_USE_YN">
+              ,ACC_USE_YN = #ACC_USE_YN#
+              </isNotEmpty>
+              <isNotEmpty property="ACC_START_DT">
+              ,ACC_START_DT = #ACC_START_DT# 
+              </isNotEmpty>
+              <isNotEmpty property="ACC_END_DT">
+              ,ACC_END_DT = #ACC_END_DT# 
+              </isNotEmpty>
+              <isNotEmpty property="COMBINE_USE_YN">
+              ,COMBINE_USE_YN = #COMBINE_USE_YN#
+              </isNotEmpty>
+              <isNotEmpty property="COMBINE_START_DT">
+              ,COMBINE_START_DT = #COMBINE_START_DT#  
+              </isNotEmpty>
+               <isNotEmpty property="COMBINE_END_DT">
+              ,COMBINE_END_DT = #COMBINE_END_DT#
+              </isNotEmpty>   
+              <isNotEmpty property="FIRST_ORDER_TP">
+              ,FIRST_ORDER_TP = #FIRST_ORDER_TP#
+              </isNotEmpty>   
+              <isNotEmpty property="FIRST_ORDER_TP_DT">
+              ,FIRST_ORDER_TP_DT = #FIRST_ORDER_TP_DT#
+              </isNotEmpty> 
+              <isNotEmpty property="TYPE">
+                  <isEqual property="TYPE" compareValue="CANSEL_TERM">                                         
+              ,CTRT_END_DT = '' , ACC_END_DT = '' , COMBINE_END_DT = ''                
+                  </isEqual>             
+              </isNotEmpty>           
+              <isNotEmpty property="REMARK">
+              ,REMARK = #REMARK#||':'||REMARK
+              </isNotEmpty>  
+              <isNotEmpty property="SAVE_PER">
+              ,SAVE_PER = #SAVE_PER#
+              </isNotEmpty>
+              <isNotEmpty property="ACC_STATUS">
+              ,ACC_STATUS = #ACC_STATUS#
+              </isNotEmpty> 
+              <isNotEmpty property="CTRT_TERM_DT">
+              ,CTRT_TERM_DT = #CTRT_TERM_DT#
+              </isNotEmpty>
+              <isNotEmpty property="ORDER_ID">
+              ,ORDER_ID = #ORDER_ID#
+              </isNotEmpty>
+              <isNotEmpty property="CB_PV_STATUS">
+              ,CB_PV_STATUS = #CB_PV_STATUS#
+              ,CB_PV_DATE = SYSDATE
+              </isNotEmpty>                                                                                                                
+         WHERE 1=1  
+              <isNotEmpty property="WHERE_CI">
+           AND A.CI=FSYCO_ENCRYPT(#WHERE_CI#,'TCMCE_PARTNER_IF_INFO','CI',20)
+              </isNotEmpty> 
+              <isEmpty property="WHERE_CI">
+           AND A.TCMCE_PARTNER_IF_INFO_SEQ=TO_NUMBER(#TCMCE_PARTNER_IF_INFO_SEQ#)     
+              </isEmpty>        
+          
+    </insert>    
+    
+    
+    <select id="getSmsReSendList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getSmsReSendList */
+     <![CDATA[     
+     
+        WITH PART_LIST AS (       
+                         SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                               ,APC_NO 
+                               ,ACC_NO 
+                               ,CTRT_USE_YN                                          
+                               ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI
+                               ,P1.CTRT_ID                    
+                               ,(SELECT TO_CHAR(COUNT(*)) FROM MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST S1 WHERE S1.TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ) SEND_CNT 
+                               ,(SELECT MAX(SEND_TIME) FROM MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST S1 WHERE S1.TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ) SEND_TIME 
+                               ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO   
+                           FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                                     
+                          WHERE P1.REG_DT > SYSDATE - 15  /*등록한지 15일 이내것만*/              
+                            AND P1.COMBINE_USE_YN = 'N' -- 결합도 안되어있고              
+                            AND P1.ACC_USE_YN = 'N' -- 계좌연동 안되었고
+                            AND P1.ACC_NO IS NULL -- 계좌연동 안되었고
+                            AND P1.CTRT_USE_YN = 'Y' -- 계약정보는 있어야 함
+                            AND P1.CTRT_ID IS NOT NULL -- 계약정보는 있어야 함
+                         )      
+       SELECT TCMCE_PARTNER_IF_INFO_SEQ
+             ,SVC_TEL_NO
+             ,APC_NO
+             ,ACC_NO
+             ,CTRT_USE_YN
+             ,DEC_CI
+             ,P1.CTRT_ID
+             ,SEND_CNT
+             ,SEND_TIME
+             ,NVL(TO_CHAR((TO_DATE(TO_CHAR(SYSDATE,'YYYYMMDD'),'YYYYMMDD') - TO_DATE(SUBSTR(SEND_TIME,0,8),'YYYYMMDD'))),'7') SEND_AFTER_DAY
+             ,(SELECT PROD_NM FROM TP_PROD WHERE PROD_CD = C1.BASIC_PROD_CD) PROD_NM 
+         FROM PART_LIST P1
+             ,MHVMVNO.TCMCT_CTRT_INFO C1       
+        WHERE P1.CTRT_ID = C1.CTRT_ID 
+          AND C1.INACT_DTTM = '99991231235959'   
+          AND C1.CTRT_STAT NOT IN ('50', '90') -- 사용중인 회선 
+          AND SEND_CNT < TO_NUMBER(#STND_SEND_CNT#)     
+          AND R_NO =1                                                             
+                    
+        ]]>    
+    </select>
+    
+    <select id="getOnlyApcNoList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getOnlyApcNoList */
+     <![CDATA[    
+     WITH PART_LIST AS (  
+                         SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                               ,APC_NO 
+                               ,ACC_NO 
+                               ,CTRT_USE_YN                                          
+                               ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI
+                               ,P1.CTRT_ID           
+                               ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO   
+                           FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                                     
+                          WHERE P1.CHG_DT > SYSDATE - 15 /* 등록한지 15일 이내것만*/                           
+                            AND P1.APC_NO IS NOT NULL -- 신청서번호 존재
+                            AND P1.ACC_NO IS NULL -- 계좌연동 안되었고 
+                       )                                                                      
+     SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+           ,P1.APC_NO 
+           ,P1.ACC_NO 
+           ,P1.CTRT_USE_YN                                          
+           ,P1.DEC_CI
+           ,P1.CTRT_ID           
+      FROM PART_LIST P1
+     WHERE R_NO =1                  
+        ]]>    
+    </select>
+    
+    
+    <select id="getSmsReSendList_bak" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getSmsReSendList */
+     <![CDATA[
+     
+     
+     
+     SELECT TCMCE_PARTNER_IF_INFO_SEQ,SVC_TEL_NO,CTRT_ID, SEND_CNT 
+       FROM (  
+             SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                   ,APC_NO
+                   ,C1.SVC_TEL_NO
+                   ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI
+                   ,P1.CTRT_ID 
+                   ,P1.ACC_NO                    
+                   ,(SELECT TO_CHAR(COUNT(*)) FROM MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST S1 WHERE S1.TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ) SEND_CNT 
+                   ,(SELECT MAX(SEND_TIME) FROM MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST S1 WHERE S1.TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ) SEND_TIME                                                                  
+               FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1 
+                   ,MHVMVNO.TCMCT_CTRT_INFO C1                                          
+              WHERE P1.CTRT_ID = C1.CTRT_ID 
+                AND C1.INACT_DTTM = '99991231235959'   
+                AND C1.CTRT_STAT NOT IN ('50', '90') -- 사용중인 회선                
+                AND P1.REG_DT > ADD_MONTHS(SYSDATE,-15) -- 등록한지 15일 이내것만              
+                AND P1.COMBINE_USE_YN = 'N' -- 결합도 안되어있고
+                AND P1.ACC_USE_YN = 'N' -- 계좌연동 안되었고
+                AND P1.ACC_NO IS NULL -- 계좌연동 안되었고
+                AND P1.CTRT_USE_YN = 'Y' -- 계약정보는 있어야 함
+             )
+     WHERE SEND_CNT < TO_NUMBER(#STND_SEND_CNT#)                                                                
+                    
+        ]]>    
+    </select>
+    
+    <select id="getSmsSendHistCnt" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getSmsSendHistCnt */
+     <![CDATA[  
+                 SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ
+                       ,COUNT(*) CNT                                                                       
+                   FROM MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST S1                                                                
+                  WHERE S1.TCMCE_PARTNER_IF_INFO_SEQ = #TCMCE_PARTNER_IF_INFO_SEQ#                    
+        ]]>    
+    </select>
+    
+    <insert id="insertSmsSendHist" parameterClass="java.util.Map" > 
+     /* partnerEvent.xml - partner.partnerEvent.insertSmsSendHist */       
+        INSERT INTO MHVMVNO.TCMCE_PARTNER_SMS_SEND_HIST
+              (TCMCE_PARTNER_IF_INFO_SEQ,DAY_TYPE,SVC_TEL_NO,SEND_TIME,REMARK,REG_ID,REG_DT,CHG_ID,CHG_DT)            
+        VALUES (
+                #TCMCE_PARTNER_IF_INFO_SEQ#
+               ,DECODE(#SEND_CNT#,'0','01','1','02','2','03')
+               ,#SVC_TEL_NO#
+               ,NVL(#SEND_TIME#,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS'))
+               ,''
+               ,#SYNC_ID#
+               ,SYSDATE
+               ,#SYNC_ID#
+               ,SYSDATE 
+                )
+    </insert> 
+    
+    <insert id="updateSmsSendCnt" parameterClass="java.util.Map" >   
+    /* partnerEvent.xml - partner.partnerEvent.updateSmsSendCnt */       
+        UPDATE MHVMVNO.TCMCE_PARTNER_IF_INFO A
+           SET SEND_CNT = SEND_CNT+1              
+              ,CHG_ID = #SYNC_ID#
+              ,CHG_DT = SYSDATE 
+         WHERE 1=1        
+           AND A.TCMCE_PARTNER_IF_INFO_SEQ=#TCMCE_PARTNER_IF_INFO_SEQ#         
+    </insert>  
+    
+    <!-- SMS 템플릿 가져오기 -->
+    <select id="getSmsTemplet" resultClass="hashMap" parameterClass="map">
+     /* partnerEvent.xml - partner.partnerEvent.getSmsTemplet */
+        SELECT  A.SMS_ID,
+                A.TEMPLET,
+                A.CALLBACK_NUM,
+                A.MNO_BIZ_CD
+        FROM    MHVMVNO.TCMRC_SMS_TEMPLET A
+        WHERE   A.SMS_ID = #SMS_ID#
+        AND     A.USE_YN = 'Y'
+        <isNotEmpty property="MNO_BIZ_CD">
+        AND     A.MNO_BIZ_CD = #MNO_BIZ_CD#
+        </isNotEmpty>
+    </select>
+    
+    <!-- 공통코드 조회 -->
+    <select id="getCommonCodeList" parameterClass="map"   resultClass="java.util.HashMap" >
+           SELECT                                                                                   
+                COMMON_GRP                                                                          
+               ,COMMON_CD                                                                           
+               ,COMMON_CD_NM                                                                        
+               ,REF_CODE                                                                            
+               ,REF_CODE2                                                                           
+               ,REF_CODE3                                                                           
+               ,REF_CODE4 
+               ,REF_CODE5 
+               ,REF_CODE6                                                                           
+               ,RMRK                                                                                
+               ,SORT_NO                                                                             
+           FROM TSYCM_CODE_DETAIL                                                                   
+           WHERE COMMON_GRP = #COMMON_GRP#                                                           
+             AND COMMON_CD  = DECODE(NVL(#COMMON_CD#,''),'',COMMON_CD,'ALL',COMMON_CD,#COMMON_CD#)    
+             AND USE_YN     = DECODE(NVL(#USE_YN#,'') ,'',USE_YN,'ALL',USE_YN,#USE_YN#)               
+             AND SYS_FLG    = DECODE(NVL(#SYS_FLG#,''),'',SYS_FLG,'ALL',SYS_FLG,#SYS_FLG#)            
+           ORDER BY COMMON_GRP,SORT_NO                                                                
+    </select>   
+    
+    <!-- 결합된 파트너 정보중 CandyM 해지회선 조회 -->
+    <select id="getTermForNotCombineList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getNotCombineList */
+     <![CDATA[    
+        SELECT  P1.TCMCE_PARTNER_IF_INFO_SEQ
+               ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI 
+               ,P1.ACC_NO 
+               ,P1.ACC_USE_YN
+               ,C1.CTRT_ID
+               ,C1.SVC_TEL_NO 
+               ,C1.CTRT_STAT 
+               ,C1.ORDER_TP   
+               ,C1.TERM_DT                                                                                   
+          FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1  
+              ,MHVMVNO.TCMCT_CTRT_INFO C1                                           
+         WHERE P1.CTRT_USE_YN = 'Y'             --계약정보 사용중
+           AND P1.CTRT_ID = C1.CTRT_ID  
+           AND P1.PARTNER_CD = '01'          
+           AND C1.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+           AND C1.CTRT_STAT IN ('50', '90')     --해지한 회선 
+                  
+        ]]>    
+    </select>
+    
+    <!-- 결합된 파트너 정보중 CandyM 해지복구회선 조회 -->
+    <select id="getCanselTermReCombineList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getCanselTermReCombineList */
+     <![CDATA[   
+      SELECT *
+        FROM (   
+                SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ
+                      ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI 
+                      ,P1.CTRT_USE_YN
+                      ,P1.ACC_NO 
+                      ,P1.ACC_USE_YN
+                      ,P1.COMBINE_USE_YN
+                      ,C1.CTRT_ID
+                      ,C1.SVC_TEL_NO 
+                      ,C1.CTRT_STAT 
+                      ,C1.ORDER_TP  
+                      ,C1.TERM_DT  
+                      ,ROW_NUMBER() OVER(PARTITION BY P1.CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO                                                                           
+                  FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1  
+                      ,MHVMVNO.TCMCT_CTRT_INFO C1                                           
+                 WHERE P1.CTRT_ID = C1.CTRT_ID  
+                   AND P1.PARTNER_CD = '01'          
+                   AND C1.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보                   
+             ) M
+       WHERE M.R_NO = 1      
+         AND M.CTRT_STAT NOT IN ('50', '90') -- 사용중인 회선
+         AND M.CTRT_USE_YN = 'N'             -- 해지인 회선                 
+        ]]>    
+    </select>
+    
+    <!-- PARTNER (TCMCE_PARTNER_RE_APC) 정보를 조회한다. -->
+    <select id="getPartnerReApcInfo" parameterClass="java.util.Map" resultClass="java.util.HashMap">   
+    /* partnerEvent.xml - partner.partnerEvent.getPartnerReApcInfo */   
+      SELECT *
+        FROM (  
+             SELECT  A.TCMCE_PARTNER_IF_INFO_SEQ
+                    ,A.PARTNER_CD
+                    ,FSYCO_DECRYPT(A.CI,'TCMCE_PARTNER_RE_APC','CI',20) DEC_CI 
+                    ,A.APC_USE_YN   
+                    ,A.APC_NO   
+                    ,A.ACC_PROD_CD                     
+                    ,A.REMARK
+                    ,A.REG_ID
+                    ,A.REG_DT
+                    ,A.CHG_ID
+                    ,A.CHG_DT       
+                    ,P1.CTRT_ID
+                    ,P1.CTRT_USE_YN
+                    ,P1.CTRT_START_DT
+                    ,P1.CTRT_END_DT
+                    ,P1.COMBINE_USE_YN
+                    ,P1.COMBINE_START_DT
+                    ,P1.COMBINE_END_DT  
+                    ,P1.FIRST_ORDER_TP
+                    ,P1.FIRST_ORDER_TP_DT                                         
+                    ,ROW_NUMBER() OVER(PARTITION BY A.TCMCE_PARTNER_IF_INFO_SEQ, A.APC_NO ORDER BY A.REG_DT DESC) AS R_NO                                        
+               FROM MHVMVNO.TCMCE_PARTNER_RE_APC A   
+                   ,MHVMVNO.TCMCE_PARTNER_IF_INFO P1        
+              WHERE A.TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ   
+              <isNotEmpty property="TCMCE_PARTNER_IF_INFO_SEQ">
+                AND A.TCMCE_PARTNER_IF_INFO_SEQ=#TCMCE_PARTNER_IF_INFO_SEQ# 
+              </isNotEmpty> 
+              <isNotEmpty property="APC_USE_YN">
+                AND A.APC_USE_YN=#APC_USE_YN# 
+              </isNotEmpty> 
+                AND A.REG_DT > SYSDATE - 15  /*등록한지 15일 이내것만*/                       
+            ) M
+     WHERE M.R_NO = 1             
+    </select>    
+    
+    <!-- PARTNER (TCMCE_PARTNER_RE_APC) 정보를 업데이트 한다. -->
+    <insert id="updateHanaPartnerReApc" parameterClass="java.util.Map" > 
+    /* partnerEvent.xml - partner.partnerEvent.updateHanaPartnerReApc */       
+        UPDATE MHVMVNO.TCMCE_PARTNER_RE_APC A
+           SET CHG_ID = #SYNC_ID#
+              ,CHG_DT = SYSDATE    
+              <isNotEmpty property="ACC_NO">
+              ,ACC_NO = #ACC_NO#
+              </isNotEmpty>                           
+              <isNotEmpty property="APC_USE_YN">
+              ,APC_USE_YN = #APC_USE_YN#
+              </isNotEmpty>                          
+              <isNotEmpty property="REMARK">
+              ,REMARK = #REMARK#||':'||REMARK
+              </isNotEmpty>             
+         WHERE 1=1         
+           AND A.TCMCE_PARTNER_IF_INFO_SEQ=#TCMCE_PARTNER_IF_INFO_SEQ# 
+           AND A.APC_NO = #APC_NO#                     
+    </insert>      
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <!-- 거래내역 조회대상 CandyM 정보가져오기 -->
+    <select id="getHanaAcctTgtList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getHanaAcctTgtList */
+     <![CDATA[ 
+      SELECT  A.TCMCE_PARTNER_IF_INFO_SEQ      -- 제휴사 연동정보(MASTER) 일련번호
+            , A.P_TCMCE_PARTNER_IF_INFO_SEQ   -- 부모 일련번호
+            , A.WORK_KEY                      -- 업무 KEY
+            , A.PARTNER_CD                    -- 제휴사코드(CMCE101)
+            , A.CI
+            , FSYCO_DECRYPT(A.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI
+            , A.CTRT_ID                        -- 계약ID
+            , A.CTRT_USE_YN                    -- CJ제휴요금제 사용여부
+            , A.CTRT_START_DT                  -- CJ제휴요금제 시작일
+            , A.CTRT_END_DT                    -- CJ제휴요금제 종료일
+            , A.FIRST_ORDER_TP                 -- CJ제휴요금제 시작 오더유형
+            , A.FIRST_ORDER_TP_DT              -- CJ제휴요금제 시작 오더유형 변경일
+            , A.ACC_USE_YN                     -- 제휴사 계좌정보 사용여부
+            , A.ACC_START_DT                   -- 제휴사(하나은행 등..) 계좌정보 시작일
+            , A.ACC_END_DT                     -- 제휴사(하나은행 등..) 계좌정보 종료일
+            , A.COMBINE_USE_YN                 -- (CJ/제휴사) 결합여부
+            , A.COMBINE_START_DT               -- (CJ/제휴사) 결합 시작일자
+            , A.COMBINE_END_DT                 -- (CJ/제휴사) 결합 종료일자
+            , A.ACC_NO                         -- 계좌번호
+            , A.APC_NO                         -- 신청번호
+            , A.ACC_PROD_CD                    -- 제휴사 상품정보
+            , A.ACC_STATUS                     -- 계좌상태(제휴사)
+            , A.OPEN_DT                        -- 개설일(제휴사)
+            , A.TERM_DT                        -- 해지일(제휴사)
+            , A.EXPIRY_DT                      -- 만기일(제휴사)
+            , A.SAVE_ACC_NO                    -- 적립계좌(제휴사)
+            , A.SAVE_PAY_YN                    -- 최종 적립여부
+            , NVL(A.SAVE_PER, 7) AS SAVE_PER   -- 적립율(제휴사)
+     FROM     MHVMVNO.TCMCE_PARTNER_IF_INFO A
+     WHERE    NVL(A.COMBINE_USE_YN, 'Y') = 'Y'                          -- 중도해지일 경우 'N' 
+     AND      NVL(A.SAVE_PAY_YN, 'N') = 'N'
+     AND      A.ACC_NO IS NOT NULL
+     AND      A.PARTNER_CD = #PARTNER_CD#                               -- 제휴사코드(CMCE101 (01:하나은행 비대면 연동이벤트 ))
+     AND      A.FIRST_ORDER_TP_DT <= #PREV_MONTH_LAST_DAY#||'595959'    -- CJ제휴요금제 시작 오더유형 변경일 <= 전월말일
+     AND      LEAST(NVL(A.EXPIRY_DT, '99991231'), NVL(A.TERM_DT, '99991231')) > #PREV_MONTH_FRST_DAY#    -- 전월1일        
+     AND      NOT EXISTS (SELECT 'X'                                    -- 해당월에 연동 성공된 데이터가 존재하지 않는 경우
+                          FROM   MHVMVNO.TCMCE_PARTNER_IF_PAY X
+                          WHERE  X.TCMCE_PARTNER_IF_INFO_SEQ = A.TCMCE_PARTNER_IF_INFO_SEQ
+                          AND    X.PAY_YYMM = #PREV_MONTH# 
+                          AND    NVL(X.IF_YN, 'N') = 'Y'
+                          )
+     
+     ]]>    
+    </select>   
+     
+     <!-- 제휴사 연동입금정보(TCMCE_PARTNER_IF_PAY) 등록 -->    
+    <insert id="insertHanaPartnerIfPay" parameterClass="java.util.Map" >   
+     /* partnerEvent.xml - partner.partnerEvent.insertHanaPartnerIfPay */  
+     <![CDATA[      
+        MERGE INTO MHVMVNO.TCMCE_PARTNER_IF_PAY A
+          USING ( SELECT GREATEST(NVL((SELECT SUM(GREATEST(TO_DATE(LEAST(SUBSTR(X.INACT_DTTM,1,8),                          --계약효력종료일시
+                                                                         CASE WHEN TO_DATE(NVL(#TRMN_DT#,'99991201'), 'YYYYMMDD') + TO_NUMBER(NVL(FSYCO_GET_REF_CODE('CMCE102', #PARTNER_CD#), '7')) > TO_DATE(#EXPI_DT#, 'YYYYMMDD')
+                                                                              THEN NVL(#EXPI_DT#, '99991231') 
+                                                                              ELSE NVL(#TRMN_DT#, '99991231')
+                                                                         END ,                                              -- 해지일자 + 7 > 만기일자 인경우 정상 만기로 봄          
+                                                                         NVL(#TRMN_DT#, '99991231'),                        --계좌해지일
+                                                                         NVL(#EXPI_DT#, '99991231'),                        --계좌만기일    
+                                                                         NVL(#CURR_MON_FRST_DAY#, '99991231')               --당월 1일
+                                                                       ), 'YYYYMMDD') - 
+                                                           TO_DATE(GREATEST(SUBSTR(X.ACT_DTTM,1,8),                         --계약효력시작일시
+                                                                            NVL(SUBSTR(B.FIRST_ORDER_TP_DT,1,8), '19000101'),--요금제 시작 오더유형 변경일
+                                                                            NVL(#NEW_DT#, '19000101'),                      --계좌개설일
+                                                                            NVL(#PREV_MON_FRST_DAY#, '19000101')            --전월1일
+                                                                           ), 'YYYYMMDD'),0))
+                                       FROM   MHVMVNO.TCMCT_CTRT_INFO X
+                                       WHERE  X.CTRT_ID = B.CTRT_ID
+                                       AND    X.CTRT_STAT IN ('20')
+                                       AND    X.ACT_DTTM <=   #INQ_END_DT#||'235959'   -- 효력시작일시 <= 전월말일
+                                       AND    X.INACT_DTTM >= #INQ_STR_DT#||'000000'   -- 효력종료일시 >= 전월1일    
+                                       AND    EXISTS (SELECT 'Y' 
+                                                      FROM   TSYCM_CODE_DETAIL D1 
+                                                      WHERE  D1.COMMON_GRP = 'CMCE103' 
+                                                      AND    D1.COMMON_CD=X.BASIC_PROD_CD 
+                                                      ) -- 해당요금제        
+                                     ),0),0) AS USED_DAYS 
+                   FROM  MHVMVNO.TCMCE_PARTNER_IF_INFO B                
+                   WHERE B.TCMCE_PARTNER_IF_INFO_SEQ = #TCMCE_PARTNER_IF_INFO_SEQ#
+                ) B 
+            ON (A.TCMCE_PARTNER_IF_INFO_SEQ =  #TCMCE_PARTNER_IF_INFO_SEQ# AND
+                A.PAY_YYMM = #PAY_YYMM# )
+          WHEN MATCHED THEN
+               UPDATE 
+                  SET IF_YN = NVL(#IF_YN#,'N')
+                    , PAY_CNT = TO_NUMBER(#PAY_CNT#)
+                    , PAY_AMT = TO_NUMBER(#PAY_AMT#)
+                    , USE_DD_CNT = B.USED_DAYS
+                      -- (사용일수/월일수)*입금액*이율*(잔여개월/총개월), 올림처리
+                    , CB_SAVING_EXP_AMT =  CASE WHEN #NEW_DT# IS NULL THEN 0
+                                                ELSE CEIL((B.USED_DAYS/ TO_NUMBER(TO_CHAR(LAST_DAY(TO_DATE(#PAY_YYMM#, 'YYYYMM')),'DD'))) *
+                                                            TO_NUMBER(#PAY_AMT#) * (TO_NUMBER(#SAVE_PER#)/100) *
+                                                            (MONTHS_BETWEEN(CASE WHEN TO_DATE(NVL(#TRMN_DT#,'99991201'), 'YYYYMMDD') + TO_NUMBER(NVL(FSYCO_GET_REF_CODE('CMCE102', #PARTNER_CD#), '7')) > TO_DATE(#EXPI_DT#, 'YYYYMMDD')
+                                                                                 THEN TO_DATE(SUBSTR(#EXPI_DT#,1,6),'YYYYMM') -- 해지일자 + 7 > 만기일자 인경우 정상 만기로 봄 
+                                                                                 ELSE TO_DATE(SUBSTR(NVL(#TRMN_DT#,#EXPI_DT#),1,6),'YYYYMM')
+                                                                            END,
+                                                                            TO_DATE(#PAY_YYMM#, 'YYYYMM'))/
+                                                             MONTHS_BETWEEN(TO_DATE(SUBSTR(#EXPI_DT#,1,6),'YYYYMM'), TO_DATE(SUBSTR(#NEW_DT#,1,6),'YYYYMM')))
+                                                           )
+                                           END                
+                    , REMARK = #REMARK#
+                    , CHG_ID = #SYNC_ID# 
+                    , CHG_DT = SYSDATE
+          WHEN NOT MATCHED THEN
+               INSERT 
+                    ( TCMCE_PARTNER_IF_INFO_SEQ, PAY_YYMM, CI, CTRT_ID
+                    , ACC_NO, INQ_STR_DT, INQ_END_DT, IF_YN, PAY_CNT
+                    , PAY_AMT, USE_DD_CNT, CB_SAVING_EXP_AMT, CB_ERP_TRAN_YN
+                    , CB_ERP_TRAN_DT, REMARK
+                    , REG_ID, REG_DT, CHG_ID, CHG_DT ) 
+             VALUES ( #TCMCE_PARTNER_IF_INFO_SEQ# 
+                    , #PAY_YYMM# 
+                    , FSYCO_ENCRYPT(#CI#,'TCMCE_PARTNER_IF_PAY','CI',20) 
+                    , #CTRT_ID#
+                    , #ACC_NO#
+                    , #INQ_STR_DT#
+                    , #INQ_END_DT#
+                    , NVL(#IF_YN#,'N')
+                    , TO_NUMBER(#PAY_CNT#)
+                    , TO_NUMBER(#PAY_AMT#)
+                    , B.USED_DAYS
+                      -- (사용일수/월일수)*입금액*이율*(잔여개월/총개월)
+                    , CASE WHEN #NEW_DT# IS NULL THEN 0
+                           ELSE CEIL((B.USED_DAYS/ TO_NUMBER(TO_CHAR(LAST_DAY(TO_DATE(#PAY_YYMM#, 'YYYYMM')),'DD'))) *
+                                      TO_NUMBER(#PAY_AMT#) * (TO_NUMBER(#SAVE_PER#)/100) *
+                                      (MONTHS_BETWEEN(CASE WHEN TO_DATE(NVL(#TRMN_DT#,'99991201'), 'YYYYMMDD') + TO_NUMBER(NVL(FSYCO_GET_REF_CODE('CMCE102', #PARTNER_CD#), '7')) > TO_DATE(#EXPI_DT#, 'YYYYMMDD')
+                                                           THEN TO_DATE(SUBSTR(#EXPI_DT#,1,6),'YYYYMM') -- 해지일자 + 7 > 만기일자 인경우 정상 만기로 봄 
+                                                           ELSE TO_DATE(SUBSTR(NVL(#TRMN_DT#,#EXPI_DT#),1,6),'YYYYMM')
+                                                      END,
+                                                      TO_DATE(#PAY_YYMM#, 'YYYYMM'))/
+                                       MONTHS_BETWEEN(TO_DATE(SUBSTR(#EXPI_DT#,1,6),'YYYYMM'), TO_DATE(SUBSTR(#NEW_DT#,1,6),'YYYYMM')))
+                                     )
+                      END               
+                    , #CB_ERP_TRAN_YN#
+                    , #CB_ERP_TRAN_DT#
+                    , #REMARK#
+                    , #SYNC_ID# 
+                    , SYSDATE 
+                    , #SYNC_ID# 
+                    , SYSDATE
+                    )
+     ]]>                       
+    </insert>
+         
+     <!-- 제휴사 연동정보(TCMCE_PARTNER_IF_INFO) 수정 -->    
+    <insert id="updateHanaPartnerIf" parameterClass="java.util.Map" >   
+    /* partnerEvent.xml - partner.partnerEvent.updateHanaPartnerIf */  
+    <![CDATA[      
+        UPDATE MHVMVNO.TCMCE_PARTNER_IF_INFO A
+           SET (ACC_USE_YN
+              , COMBINE_USE_YN
+              , OPEN_DT
+              , TERM_DT
+              , EXPIRY_DT
+              , SAVE_ACC_NO
+              , PAY_ACCM_AMT
+              , CB_SAVING_EXP_ACCM_AMT
+              , CHG_ID
+              , CHG_DT ) 
+             = (SELECT  CASE WHEN TO_DATE(NVL(#TERM_DT#,'99991201'), 'YYYYMMDD') + TO_NUMBER(NVL(FSYCO_GET_REF_CODE('CMCE102', #PARTNER_CD#), '7')) > TO_DATE(#EXPIRY_DT#, 'YYYYMMDD') -- 해지일자 + 7 > 만기일자 인경우 정상 만기로 봄 
+                             THEN A.ACC_USE_YN 
+                             ELSE 'N'
+                        END -- 중도해지일경우 'N'
+                      , CASE WHEN TO_DATE(NVL(#TERM_DT#,'99991201'), 'YYYYMMDD') + TO_NUMBER(NVL(FSYCO_GET_REF_CODE('CMCE102', #PARTNER_CD#), '7')) > TO_DATE(#EXPIRY_DT#, 'YYYYMMDD') -- 해지일자 + 7 > 만기일자 인경우 정상 만기로 봄 
+                             THEN A.COMBINE_USE_YN 
+                             ELSE 'N'
+                        END -- 중도해지일경우 'N'              
+                      , #OPEN_DT#
+                      , CASE WHEN #TERM_DT# IS NULL THEN A.TERM_DT ELSE #TERM_DT# END 
+                      , CASE WHEN #EXPIRY_DT# IS NULL THEN A.EXPIRY_DT ELSE #EXPIRY_DT# END 
+                      , CASE WHEN #SAVE_ACC_NO# IS NULL THEN A.SAVE_ACC_NO ELSE #SAVE_ACC_NO# END
+                      , SUM(PAY_AMT) AS PAY_ACCM_AMT
+                      , SUM(CB_SAVING_EXP_AMT) AS CB_SAVING_EXP_ACCM_AMT
+                      , #SYNC_ID#
+                      , SYSDATE
+                FROM    MHVMVNO.TCMCE_PARTNER_IF_PAY X
+                WHERE   X.TCMCE_PARTNER_IF_INFO_SEQ = A.TCMCE_PARTNER_IF_INFO_SEQ
+                )
+         WHERE A.TCMCE_PARTNER_IF_INFO_SEQ=TO_NUMBER(#TCMCE_PARTNER_IF_INFO_SEQ#) 
+     ]]>   
+    </insert>    
+    
+    <!-- 적금 전월 중도해지자 조회  PartnerInquiryHanaSchedule.java -->
+    <select id="getSmsTermSendList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getSmsTermSendList */
+     <![CDATA[     
+        WITH PART_LIST AS (       
+                         SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                               ,APC_NO 
+                               ,ACC_NO 
+                               ,CTRT_USE_YN  
+                               ,ACC_USE_YN   
+                               ,COMBINE_USE_YN                                     
+                               ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI
+                               ,P1.CI
+                               ,P1.CTRT_ID
+                               ,TO_DATE(P1.TERM_DT,'YYYYMMDD') TERM_DT                     
+                               ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO   
+                           FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                                     
+                          WHERE 1=1
+                            AND P1.ACC_USE_YN ='N'
+                            AND P1.TERM_DT IS NOT NULL                            
+                            AND P1.TERM_DT >= TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'
+                            AND P1.TERM_DT <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                            AND TO_DATE(P1.TERM_DT,'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',P1.PARTNER_CD)) <= TO_DATE(P1.EXPIRY_DT, 'YYYYMMDD')                                                        
+                         )      
+       SELECT TCMCE_PARTNER_IF_INFO_SEQ
+             ,C1.SVC_TEL_NO
+             ,APC_NO
+             ,ACC_NO
+             ,CTRT_USE_YN
+             ,DEC_CI
+             ,P1.CTRT_ID
+             ,(SELECT PROD_NM FROM TP_PROD WHERE PROD_CD = C1.BASIC_PROD_CD) PROD_NM 
+         FROM PART_LIST P1
+             ,MHVMVNO.TCMCT_CTRT_INFO C1       
+        WHERE P1.CTRT_ID = C1.CTRT_ID 
+          AND C1.INACT_DTTM = '99991231235959'   
+          AND C1.CTRT_STAT NOT IN ('50', '90') -- 사용중인 회선
+          AND P1.ACC_USE_YN = 'N'      
+          AND P1.CTRT_USE_YN    =   'Y'
+          AND R_NO =1                                   
+          AND NOT EXISTS (SELECT * 
+                            FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P2
+                           WHERE P2.COMBINE_USE_YN = 'Y'                             
+                             AND P2.CI  =   P1.CI
+                             AND P1.TCMCE_PARTNER_IF_INFO_SEQ < P2.TCMCE_PARTNER_IF_INFO_SEQ)                                                         
+                    
+        ]]>    
+    </select>
+    
+    <!-- 해지여부 -->
+    <select id="getElpsYn" resultClass="java.lang.String" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getElpsYn */      
+        SELECT  CASE WHEN TO_DATE(NVL(#TERM_DT#,#EXPIRY_DT#), 'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',#PARTNER_CD#))
+                           > TO_DATE(#EXPIRY_DT#, 'YYYYMMDD')
+                     THEN 'Y'     /*해지일자 + 기준일 > 만기일자 인경우 정상 만기로 봄*/
+                     ELSE 'N'
+                 END
+          FROM DUAL       
+    </select>
+        
+    <!-- 적금 만기해지 후 재가입없는 조회  PartnerSmsSendSchedule.java-->
+    <select id="getSmsExpSendList" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getSmsExpSendList */
+     <![CDATA[     
+     
+        WITH PART_LIST AS (       
+                         SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                               ,P1.APC_NO 
+                               ,P1.ACC_NO 
+                               ,P1.PARTNER_CD
+                               ,P1.CTRT_USE_YN  
+                               ,P1.ACC_USE_YN   
+                               ,P1.COMBINE_USE_YN                                                                   
+                               ,FSYCO_DECRYPT(P1.CI,'TCMCE_PARTNER_IF_INFO','CI',20) DEC_CI
+                               ,P1.CI
+                               ,P1.CTRT_ID                    
+                               ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO
+                               ,TRUNC(SYSDATE) - LEAST(TO_DATE(P1.EXPIRY_DT,'YYYYMMDD'),TO_DATE(NVL(P1.TERM_DT,P1.EXPIRY_DT),'YYYYMMDD'))  AS ELPS_DAYS
+                               ,P1.TERM_DT
+                               ,P1.EXPIRY_DT
+                               ,P1.ACC_STATUS
+                           FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                                     
+                          WHERE 1=1                   
+                            AND P1.COMBINE_USE_YN   = 'Y' 
+                            AND LEAST(TO_DATE(P1.EXPIRY_DT,'YYYYMMDD'),TO_DATE(NVL(P1.TERM_DT,P1.EXPIRY_DT),'YYYYMMDD'))    <= TRUNC(SYSDATE) 
+                            AND NOT(TO_DATE(NVL(P1.TERM_DT,P1.EXPIRY_DT),'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',P1.PARTNER_CD)) <= TO_DATE(P1.EXPIRY_DT, 'YYYYMMDD'))                            
+                         )      
+       SELECT TCMCE_PARTNER_IF_INFO_SEQ
+             ,SVC_TEL_NO
+             ,APC_NO
+             ,ACC_NO
+             ,CTRT_USE_YN
+             ,DEC_CI
+             ,P1.CI
+             ,P1.CTRT_ID
+             ,(SELECT PROD_NM FROM TP_PROD WHERE PROD_CD = C1.BASIC_PROD_CD) PROD_NM
+             ,P1.ELPS_DAYS
+             ,D1.REF_CODE2,D1.REF_CODE3,D1.REF_CODE4,D1.REF_CODE5,D1.REF_CODE6
+             ,DECODE(P1.TERM_DT,NULL,'Y','N') TERM_API_CHK
+             ,P1.TERM_DT
+             ,P1.EXPIRY_DT 
+             ,P1.PARTNER_CD
+             ,P1.ACC_STATUS
+         FROM PART_LIST P1
+             ,MHVMVNO.TCMCT_CTRT_INFO C1
+             ,(SELECT REF_CODE AS PARTNER_CD
+                      ,TO_NUMBER(REF_CODE2) AS REF_CODE2
+                      ,TO_NUMBER(REF_CODE3) AS REF_CODE3                                                                                                                      
+                      ,TO_NUMBER(REF_CODE4) AS REF_CODE4
+                      ,TO_NUMBER(REF_CODE5) AS REF_CODE5
+                      ,TO_NUMBER(REF_CODE6) AS REF_CODE6
+                 FROM TSYCM_CODE_DETAIL                                                                   
+                WHERE COMMON_GRP = 'CMCE101'
+                  AND COMMON_CD  = 'EXPSEND'
+                  AND USE_YN     = 'Y') D1       
+        WHERE P1.CTRT_ID = C1.CTRT_ID 
+          AND C1.INACT_DTTM = '99991231235959'   
+          AND C1.CTRT_STAT NOT IN ('50', '90') -- 사용중인 회선      
+          AND R_NO =1               
+          AND (P1.ELPS_DAYS = D1.REF_CODE2   OR 
+               P1.ELPS_DAYS = D1.REF_CODE3   OR
+               P1.ELPS_DAYS = D1.REF_CODE4   OR
+               P1.ELPS_DAYS = D1.REF_CODE5   OR
+               P1.ELPS_DAYS = D1.REF_CODE6   
+               )
+          AND NOT EXISTS (SELECT * 
+                            FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P2
+                           WHERE 1=1
+                             -- AND P2.COMBINE_USE_YN = 'Y'
+                             AND P2.CI  =   P1.CI
+                             AND P1.TCMCE_PARTNER_IF_INFO_SEQ < P2.TCMCE_PARTNER_IF_INFO_SEQ)                    
+                    
+        ]]>    
+    </select>
+    
+    <!-- 요금제해지, 적금중도해지 적립금소멸 대상 PartnerSaveAcctSchedule.java-->
+    <insert id="insertDchgInfo" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.insertDchgInfo */
+     <![CDATA[          
+        INSERT INTO TCMCE_PARTNER_IF_ACCT_INFO
+        (
+            DT_SLIP
+            ,WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ
+            ,REQ_DTM
+            ,CTRT_ID
+            ,CUST_ID
+            ,PAY_YYMM
+            ,USE_DD_CNT
+            ,CB_SAVING_AMT
+            ,SORC_SYS_ID
+            ,OPRT_UNIT_KEY
+            ,DATA_SEQ
+            ,CD_BANK
+            ,NO_ACCOUNT_SERNUM
+            ,NO_ACCOUNT
+            ,NM_ACCOUNT
+            ,PROC_CD
+            ,PROC_DT
+            ,CNCL_RESN
+            ,REMARK
+            ,REG_ID
+            ,REG_DT
+            ,CHG_ID
+            ,CHG_DT
+            ,GOODS
+            ,KB_EQP
+            ,CD_PROD
+        )
+        WITH PART_LIST AS (       
+                  SELECT   TCMCE_PARTNER_IF_INFO_SEQ                   
+                           ,ACC_NO 
+                           ,CTRT_USE_YN  
+                           ,ACC_USE_YN   
+                           ,COMBINE_USE_YN                                                                   
+                           ,CI
+                           ,CTRT_ID                    
+                           ,TERM_DT
+                           ,EXPIRY_DT
+                           ,CTRT_TERM_DT
+                           ,LEAST(NVL(TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')),SUBSTR(NVL(CTRT_TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')),1,8)) CASE_DT
+                           ,(CASE WHEN NVL(TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')) <= SUBSTR(NVL(CTRT_TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')),1,8) THEN '적금 중도해지'   
+                                  ELSE '요금제 해지'
+                              END) AS GBN
+                           ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO
+                      FROM (   
+                             /*전전월 적금중도해지  CASE 2,6,8*/              
+                             SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                                   ,ACC_NO 
+                                   ,CTRT_USE_YN  
+                                   ,ACC_USE_YN   
+                                   ,COMBINE_USE_YN                                                                   
+                                   ,P1.CI
+                                   ,P1.CTRT_ID                    
+                                   ,P1.TERM_DT
+                                   ,P1.EXPIRY_DT
+                                   ,P1.CTRT_TERM_DT                           
+                               FROM TCMCE_PARTNER_IF_INFO P1                                                     
+                              WHERE 1=1
+                                AND NVL(P1.CB_PV_STATUS,'X') NOT IN ('F','C')
+                                AND P1.ACC_USE_YN ='N'
+                                AND P1.COMBINE_USE_YN = 'N'
+                                AND P1.TERM_DT IS NOT NULL                            
+                                AND P1.TERM_DT >= TO_CHAR(ADD_MONTHS(SYSDATE,-3),'YYYYMM')||'01'
+                                AND P1.TERM_DT <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-3)),'YYYYMMDD')
+                                AND TO_DATE(P1.TERM_DT,'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',P1.PARTNER_CD)) <= TO_DATE(P1.EXPIRY_DT, 'YYYYMMDD')
+                         UNION
+                             /*전전월 요금제해지 CASE 3 4*/
+                             SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                                   ,ACC_NO 
+                                   ,CTRT_USE_YN  
+                                   ,ACC_USE_YN   
+                                   ,COMBINE_USE_YN                                                                   
+                                   ,P1.CI
+                                   ,P1.CTRT_ID                    
+                                   ,P1.TERM_DT
+                                   ,P1.EXPIRY_DT
+                                   ,P1.CTRT_TERM_DT                           
+                               FROM TCMCE_PARTNER_IF_INFO P1                                                     
+                              WHERE 1=1
+                                AND NVL(P1.CB_PV_STATUS,'X') NOT IN ('F','C')
+                                AND P1.CTRT_USE_YN = 'N'                              
+                                AND P1.COMBINE_USE_YN = 'N'    
+                                AND P1.CTRT_TERM_DT >= TO_CHAR(ADD_MONTHS(SYSDATE,-3),'YYYYMM')||'01'
+                                AND P1.CTRT_TERM_DT <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-3)),'YYYYMMDD')
+                             )                             
+                     )      
+        SELECT   
+            TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')    DT_SLIP
+            ,#WORK_TYPE#                                            WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ                              TCMCE_PARTNER_IF_INFO_SEQ
+            ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')                    REQ_DTM
+            ,P1.CTRT_ID                                             CTRT_ID            
+            ,T3.CUST_ID                                             CUST_ID        
+            ,TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')               PAY_YYMM
+            ,null                                                   USE_DD_CNT
+            ,NVL(( SELECT SUM(DECODE(WORK_TYPE,'01',1, -1) * CB_SAVING_AMT) 
+                     FROM TCMCE_PARTNER_IF_ACCT_INFO
+                    WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                      AND PROC_CD IN ('05')
+                      AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                      AND CTRT_ID=P1.CTRT_ID
+                      AND CUST_ID=T3.CUST_ID
+                     ),0)                                           CB_SAVING_AMT 
+            ,#systemId#                                             SORC_SYS_ID
+            ,#oprtUnitKey#                                          OPRT_UNIT_KEY
+            ,ROWNUM                                                 DATA_SEQ
+            ,null                                                   CD_BANK
+            ,null                                                   NO_ACCOUNT_SERNUM
+            ,null                                                   NO_ACCOUNT
+            ,null                                                   NM_ACCOUNT
+            ,'01'                                                   PROC_CD
+            ,SYSDATE                                                PROC_DT
+            ,null                                                   CNCL_RESN
+            ,'['||CASE_DT||']'||GBN                                 REMARK    
+            ,#SYNC_ID#                                              REG_ID
+            ,SYSDATE                                                REG_DT
+            ,#SYNC_ID#                                              CHG_ID
+            ,SYSDATE                                                CHG_DT
+            ,T4.PROD_GRP                                            GOODS
+            ,CASE WHEN T4.PROD_GRP IN ('K','L','B','M') THEN 'C' 
+                WHEN T4.PROD_GRP IN ('O','U') THEN 'U' 
+                ELSE '' 
+                END                                                 KB_EQP   
+            ,T2.BASIC_PROD_CD                                       CD_PROD
+         FROM PART_LIST         P1
+             ,TCMCT_CTRT_INFO   T2
+             ,TCMCU_CUST_INFO   T3
+             ,TP_PROD           T4             
+        WHERE P1.CI         =   T3.IPIN_NUM
+          AND P1.CTRT_ID    =   T2.CTRT_ID
+          AND T2.INACT_DTTM = '99991231235959'
+          --AND CASE_DT||'000000'   BETWEEN T2.ACT_DTTM   AND T2.INACT_DTTM
+          AND R_NO          =   1 
+          AND T2.BASIC_PROD_CD = T4.PROD_CD
+          AND NVL(( SELECT SUM(DECODE(WORK_TYPE,'01',1, -1) * CB_SAVING_AMT) 
+                     FROM TCMCE_PARTNER_IF_ACCT_INFO
+                    WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                      AND PROC_CD IN ('05')
+                      AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                      AND CTRT_ID=P1.CTRT_ID
+                      AND CUST_ID=T3.CUST_ID
+                     ),0)      >         0  
+          AND NOT EXISTS (SELECT * 
+                            FROM TCMCE_PARTNER_IF_ACCT_INFO
+                           WHERE DT_SLIP            >=   TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'
+                             AND DT_SLIP            <=   TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')                            
+                             AND WORK_TYPE          =   #WORK_TYPE#
+                             AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                             AND PROC_CD            NOT IN( '03')
+                             AND CB_SAVING_AMT > 0
+                           )        
+    ]]>          
+    </insert>
+
+    <!-- 요금제해지, 적금중도해지 적립금소멸 대상 PartnerSaveAcctSchedule.java-->
+    <select id="selectDchgInfo" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.selectDchgInfo 
+       INSERT TCMCE_PARTNER_IF_ACCT_INFO TABLE
+    */
+     <![CDATA[          
+        WITH PART_LIST AS (       
+                  SELECT   TCMCE_PARTNER_IF_INFO_SEQ                   
+                           ,ACC_NO 
+                           ,CTRT_USE_YN  
+                           ,ACC_USE_YN   
+                           ,COMBINE_USE_YN                                                                   
+                           ,CI
+                           ,CTRT_ID                    
+                           ,TERM_DT
+                           ,EXPIRY_DT
+                           ,CTRT_TERM_DT
+                           ,LEAST(NVL(TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')),SUBSTR(NVL(CTRT_TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')),1,8)) CASE_DT
+                           ,(CASE WHEN NVL(TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')) <= SUBSTR(NVL(CTRT_TERM_DT,TO_CHAR(SYSDATE,'YYYYMMDD')),1,8) THEN '적금 중도해지'   
+                                  ELSE '요금제 해지'
+                              END) AS GBN
+                           ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO
+                      FROM (   
+                             /*전전월 적금중도해지  CASE 2,6,8*/              
+                             SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                                   ,ACC_NO 
+                                   ,CTRT_USE_YN  
+                                   ,ACC_USE_YN   
+                                   ,COMBINE_USE_YN                                                                   
+                                   ,P1.CI
+                                   ,P1.CTRT_ID                    
+                                   ,P1.TERM_DT
+                                   ,P1.EXPIRY_DT
+                                   ,P1.CTRT_TERM_DT                           
+                               FROM TCMCE_PARTNER_IF_INFO P1                                                     
+                              WHERE 1=1
+                                AND NVL(P1.CB_PV_STATUS,'X') NOT IN ('F','C')
+                                AND P1.ACC_USE_YN ='N'
+                                AND P1.COMBINE_USE_YN = 'N'
+                                AND P1.TERM_DT IS NOT NULL                            
+                                AND P1.TERM_DT >= TO_CHAR(ADD_MONTHS(SYSDATE,-3),'YYYYMM')||'01'
+                                AND P1.TERM_DT <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-3)),'YYYYMMDD')
+                                AND TO_DATE(P1.TERM_DT,'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',P1.PARTNER_CD)) <= TO_DATE(P1.EXPIRY_DT, 'YYYYMMDD')
+                         UNION
+                             /*전전월 요금제해지 CASE 3 4*/
+                             SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                   
+                                   ,ACC_NO 
+                                   ,CTRT_USE_YN  
+                                   ,ACC_USE_YN   
+                                   ,COMBINE_USE_YN                                                                   
+                                   ,P1.CI
+                                   ,P1.CTRT_ID                    
+                                   ,P1.TERM_DT
+                                   ,P1.EXPIRY_DT
+                                   ,P1.CTRT_TERM_DT                           
+                               FROM TCMCE_PARTNER_IF_INFO P1                                                     
+                              WHERE 1=1
+                                AND NVL(P1.CB_PV_STATUS,'X') NOT IN ('F','C')
+                                AND P1.CTRT_USE_YN = 'N'                              
+                                AND P1.COMBINE_USE_YN = 'N'    
+                                AND P1.CTRT_TERM_DT >= TO_CHAR(ADD_MONTHS(SYSDATE,-3),'YYYYMM')||'01'
+                                AND P1.CTRT_TERM_DT <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-3)),'YYYYMMDD')
+                             )                             
+                     )      
+        SELECT   
+            TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')    DT_SLIP
+            ,#WORK_TYPE#                                            WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ                              TCMCE_PARTNER_IF_INFO_SEQ
+            ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')                    REQ_DTM
+            ,P1.CTRT_ID                                             CTRT_ID            
+            ,T3.CUST_ID                                             CUST_ID        
+            ,TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')               PAY_YYMM
+            ,null                                                   USE_DD_CNT
+            ,NVL(( SELECT SUM(DECODE(WORK_TYPE,'01',1, -1) * CB_SAVING_AMT) 
+                     FROM TCMCE_PARTNER_IF_ACCT_INFO
+                    WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                      AND PROC_CD IN ('05')
+                      AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                      AND CTRT_ID=P1.CTRT_ID
+                      AND CUST_ID=T3.CUST_ID
+                     ),0)                                           CB_SAVING_AMT 
+            ,#systemId#                                             SORC_SYS_ID
+            ,#oprtUnitKey#                                          OPRT_UNIT_KEY
+            ,ROWNUM                                                 DATA_SEQ
+            ,null                                                   CD_BANK
+            ,null                                                   NO_ACCOUNT_SERNUM
+            ,null                                                   NO_ACCOUNT
+            ,null                                                   NM_ACCOUNT
+            ,'01'                                                   PROC_CD
+            ,SYSDATE                                                PROC_DT
+            ,null                                                   CNCL_RESN
+            ,'['||CASE_DT||']'||GBN                                 REMARK    
+            ,#SYNC_ID#                                              REG_ID
+            ,SYSDATE                                                REG_DT
+            ,#SYNC_ID#                                              CHG_ID
+            ,SYSDATE                                                CHG_DT
+            ,T4.PROD_GRP                                            GOODS
+            ,CASE WHEN T4.PROD_GRP IN ('K','L','B','M') THEN 'C' 
+                WHEN T4.PROD_GRP IN ('O','U') THEN 'U' 
+                ELSE '' 
+                END                                                 KB_EQP   
+            ,T2.BASIC_PROD_CD                                       CD_PROD
+         FROM PART_LIST         P1
+             ,TCMCT_CTRT_INFO   T2
+             ,TCMCU_CUST_INFO   T3
+             ,TP_PROD           T4             
+        WHERE P1.CI         =   T3.IPIN_NUM
+          AND P1.CTRT_ID    =   T2.CTRT_ID
+          AND T2.INACT_DTTM = '99991231235959'
+          --AND CASE_DT||'000000'   BETWEEN T2.ACT_DTTM   AND T2.INACT_DTTM
+          AND R_NO          =   1 
+          AND T2.BASIC_PROD_CD = T4.PROD_CD
+          AND NVL(( SELECT SUM(DECODE(WORK_TYPE,'01',1, -1) * CB_SAVING_AMT) 
+                     FROM TCMCE_PARTNER_IF_ACCT_INFO
+                    WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                      AND PROC_CD IN ('05')
+                      AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                      AND CTRT_ID=P1.CTRT_ID
+                      AND CUST_ID=T3.CUST_ID
+                     ),0)      >         0  
+          AND NOT EXISTS (SELECT * 
+                            FROM TCMCE_PARTNER_IF_ACCT_INFO
+                           WHERE DT_SLIP            >=   TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'
+                             AND DT_SLIP            <=   TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')                            
+                             AND WORK_TYPE          =   #WORK_TYPE#
+                             AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                             AND PROC_CD            NOT IN( '03')
+                             AND CB_SAVING_AMT > 0
+                           )        
+    ]]>          
+    </select>
+    <select id="selectPartnerSaveAcct" parameterClass="map" resultClass="hashMap">
+    /* partnerEvent.xml - partner.partnerEvent.selectPartnerSaveAcct 
+       INSERT TCMCE_PARTNER_IF_ACCT_INFO TABLE 
+    */
+     <![CDATA[          
+      SELECT   CASE WHEN #PREV_MONTH# = '201910' THEN '20191129'
+                    ELSE TO_CHAR(LAST_DAY(TO_DATE(A.PAY_YYMM||'01', 'YYYYMMDD')), 'YYYYMMDD') 
+               END  AS DT_SLIP  -- 전표일자(전월말일), 201910인경우 20191129로 처리
+             , '01' AS WORK_TYPE                -- 작업유형(CMCE108, 01:적립, 02:환수, 03:지급)
+             , A.TCMCE_PARTNER_IF_INFO_SEQ      -- 제휴사 연동정보 일련번호
+             , TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS') AS REQ_DTM  -- 요청일시
+             , A.CTRT_ID                        -- 계약ID
+             , A.CUST_ID                        -- 고객ID
+             , A.PAY_YYMM                       -- 입금년월
+             , A.USE_DD_CNT                     -- 사용일수
+             , A.CB_SAVING_AMT                  -- 캐쉬백 적립금액
+             , A.PROD_GRP AS GOODS              -- 상품
+             , CASE WHEN A.PROD_GRP IN ('K','L','B','M') THEN 'C' 
+                    WHEN A.PROD_GRP IN ('O','U') THEN 'U' 
+                    ELSE '' 
+               END AS KB_EQP                    -- 장비구분
+             , A.BASIC_PROD_CD AS CD_PROD       -- 상품코드
+             , #SORC_SYS_ID# AS SORC_SYS_ID         -- 원천시스템아이디 
+             , #OPRT_UNIT_KEY# AS OPRT_UNIT_KEY     -- 작업단위키 
+             , A.SEQ_NO AS DATA_SEQ                 -- 데이타일련번호(작업단위별 순번)
+             , '' AS CD_BANK                        -- 은행코드
+             , '' AS NO_ACCOUNT_SERNUM              -- 계좌번호일련번호
+             , '' AS NO_ACCOUNT                     -- 계죄번호암호화
+             , '' AS NM_ACCOUNT                     -- 예금주
+             , '01' AS PROC_CD                      -- 처리결과(CMCE109, 01:신청, 02:ERP전송, 03:취소/반려, 04:익월반여예정, 05:처리완료)
+             , SYSDATE AS PROC_DT                   -- 처리일시
+             , '' AS CNCL_RESN                      -- 취소(반려) 사유
+             , NVL((SELECT X.REF_CODE2
+                    FROM   TSYCM_CODE_DETAIL X
+                    WHERE  X.COMMON_GRP = 'CMCE102'
+                    AND    X.COMMON_CD ='01'
+                   ), 'MVNO_하나제휴') || '_적립' AS RMK  -- 비고(MVNO_하나제휴_적립)
+             , #BATCH_ID# AS REG_ID                    -- 등록 사용자ID 
+             , SYSDATE AS REG_DT                       -- 등록 시간
+             , #BATCH_ID# AS CHG_ID                    -- 수정 사용자ID
+             , SYSDATE AS CHG_DT                       -- 수정시간
+      FROM   ( SELECT   A.TCMCE_PARTNER_IF_INFO_SEQ
+                      , A.CTRT_ID
+                      , C.CUST_ID
+                      , A.PAY_YYMM
+                      , A.USE_DD_CNT
+                      , A.CB_SAVING_EXP_AMT AS CB_SAVING_AMT
+                      , C.BASIC_PROD_CD
+                      , C.PROD_GRP
+                      , ROWNUM AS SEQ_NO
+               FROM     TCMCE_PARTNER_IF_PAY A
+                      , TCMCE_PARTNER_IF_INFO B
+                      , TCMCT_CTRT_INFO C
+               WHERE    B.TCMCE_PARTNER_IF_INFO_SEQ = A.TCMCE_PARTNER_IF_INFO_SEQ
+               AND      C.CTRT_ID = B.CTRT_ID
+               AND      C.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+               AND      A.PAY_YYMM = #PREV_MONTH#
+               AND      A.CB_SAVING_EXP_AMT > 0
+               AND      NVL(A.CB_ERP_TRAN_YN,'N') = 'N'
+               ) A      
+    ]]>          
+    </select>
+    <!-- 전월등록 적립금소멸 대상 PartnerSaveAcctSchedule.java-->
+    <insert id="updateDchgInfo" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.updateDchgInfo */
+     <![CDATA[          
+        UPDATE TCMCE_PARTNER_IF_ACCT_INFO A
+        SET OPRT_UNIT_KEY = #oprtUnitKey#,
+            DATA_SEQ    =  ROWNUM +  #PROC_CNT# 
+        WHERE OPRT_UNIT_KEY IS NULL
+           AND A.DT_SLIP      BETWEEN  TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01' AND TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+           AND A.WORK_TYPE    =   '02'
+           AND A.PROC_CD      =   '01'   
+    ]]>          
+    </insert>
+
+    <!-- 전월등록 적립금소멸 대상 PartnerSaveAcctSchedule.java-->
+    <select id="selectDchgUpdateInfo" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.selectDchgUpdateInfo */
+     <![CDATA[          
+        SELECT 'OPRT_UNIT_KEY = '+ #oprtUnitKey#,
+               'DATA_SEQ    =  '+ROWNUM +' '+#PROC_CNT#
+          FROM TCMCE_PARTNER_IF_ACCT_INFO A 
+        WHERE OPRT_UNIT_KEY IS NULL
+           AND A.DT_SLIP      BETWEEN  TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01' AND TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+           AND A.WORK_TYPE    =   '02'
+           AND A.PROC_CD      =   '01'   
+    ]]>          
+    </select>
+    
+    <!-- 요금제해지, 적금중도해지 적립금소멸 대상 ERP전송 PartnerSaveAcctSchedule.java-->
+    <insert id="insertIfSlipLnkgSap" parameterClass="java.util.Map">
+        /*partnerEvent.xml - partner.partnerEvent.insertIfSlipLnkgSap */
+            INSERT INTO TBLEP_ACCT_SLIP_LNKG_SAP (
+                   DT_SLIP
+                 , SEQ
+                 , IF_KIND
+                 , IF_KIND_D
+                 , SEQ_NSMS
+                 , BILLS_SEQ
+                 , CD_SLIPTYPE
+                 , CD_COMPANY
+                 , CD_ACCNTUNIT
+                 , CD_PLANT
+                 , SCUSTID
+                 , CUSTID
+                 , YM_NOTICE
+                 , YYMM
+                 , SLIP_NO
+                 , CD_WRITER
+                 , CD_WRITERDEPT
+                 , CD_BELONGDEPT
+                 , GOODS
+                 , CD_ITEM
+                 , AMT_SUPPLY
+                 , AMT_TAX
+                 , AMT_SALE
+                 , AMT_TRUNC
+                 , TAX_AMT_SALE
+                 , YN_LEGAL
+                 , YMD_PROOF
+                 , YN_SEND
+                 , YN_SURTAX
+                 , BIGO
+                 , DT_REGIST
+                 , NO_REGEMP
+                 , DT_MODIFY
+                 , NO_MODEMP
+                 , YN_SALES
+                 , EQP
+                 , YM_SALE
+                 , KB_EQP
+                 , RECEIVER_DET
+                 , SORC_SYS_ID
+                 , OPRT_UNIT_KEY
+                 , DATA_SEQ
+                 , CD_SECT
+                 , CD_SO
+                 , CD_SVC
+                 , CD_PROD
+                 , CD_BILL_ITEM
+            )
+            SELECT /*+ordered*/
+                   DT_SLIP                                      DT_SLIP
+                 , SEQ_ACCT_SLIP_LNKG.NEXTVAL                   SEQ
+                 , #IF_KIND#                                    IF_KIND
+                 , #IF_KIND_D#                                  IF_KIND_D    
+                 , #SEQ_NSMS#                                   SEQ_NSMS
+                 , A.TCMCE_PARTNER_IF_INFO_SEQ
+                 , #CD_SLIPTYPE#                                CD_SLIPTYPE
+                 , #CD_COMPANY#                                 CD_COMPANY
+                 , #CD_ACCNTUNIT#                               CD_ACCNTUNIT
+                 , #CD_PLANT#                                   CD_PLANT
+                 , A.CUST_ID                                    SCUSTID                 
+                 , A.CTRT_ID                                    CUSTID                 
+                 , SUBSTR(DT_SLIP,1,6)                          YM_NOTICE
+                 , SUBSTR(DT_SLIP,1,6)                          YYMM
+                 , ''                                           SLIP_NO
+                 , #CD_WRITER#                                  CD_WRITER    
+                 , #CD_WRITERDEPT#                              CD_WRITERDEPT
+                 , #CD_BELONGDEPT#                              CD_BELONGDEPT
+                 , A.GOODS                                      GOODS
+                 , #CD_ITEM#                                    CD_ITEM
+                 , A.CB_SAVING_AMT                              AMT_SUPPLY
+                 , 0                                            AMT_TAX
+                 , A.CB_SAVING_AMT                              AMT_SALE
+                 , 0                                            AS AMT_TRUNC
+                 , A.CB_SAVING_AMT                              TAX_AMT_SALE
+                 , 'N'                                          YN_LEGAL
+                 , A.DT_SLIP                                    YMD_PROOF                 
+                 , 'N'                                          YN_SEND
+                 , 'N'                                          YN_SURTAX
+                 , (SELECT REF_CODE2||DECODE(#WORK_TYPE#,'01','_적립','02','_환입','') 
+                      FROM TSYCM_CODE_DETAIL                                                                   
+                     WHERE COMMON_GRP = 'CMCE102'
+                       AND COMMON_CD  = B.PARTNER_CD
+                       AND USE_YN     = 'Y')                    BIGO
+                 , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')          DT_REGIST
+                 , #SYNC_ID#                                    NO_REGEMP
+                 , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')          DT_MODIFY
+                 , #SYNC_ID#                                    NO_MODEMP
+                 , 'N'                                          YN_SALES
+                 , ''                                           EQP
+                 , ''                                           YM_SALE
+                 , A.KB_EQP                                     KB_EQP
+                 , #RECEIVER_DET#                               RECEIVER_DET
+                 , #systemId#                                   SORC_SYS_ID
+                 , #oprtUnitKey#                                OPRT_UNIT_KEY
+                 , DATA_SEQ                                     DATA_SEQ
+                 , ''                                           CD_SECT
+                 , #busDiv#                                     CD_SO
+                 , ''                                           CD_SVC
+                 , A.CD_PROD                                    CD_PROD
+                 ,'SR00010001'                                  CD_BILL_ITEM
+            FROM TCMCE_PARTNER_IF_ACCT_INFO     A,
+                 TCMCE_PARTNER_IF_INFO          B 
+           WHERE A.DT_SLIP      BETWEEN  TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01' AND TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+             AND A.WORK_TYPE    =   #WORK_TYPE#
+             AND A.PROC_CD      =   '01'
+             AND A.TCMCE_PARTNER_IF_INFO_SEQ = B.TCMCE_PARTNER_IF_INFO_SEQ
+             AND A.CB_SAVING_AMT > 0
+
+    </insert>
+    
+    <!-- 요금제해지, 적금중도해지 적립금소멸 대상 ERP전송 PartnerSaveAcctSchedule.java-->
+    <select id="selectIfSlipLnkgSap" resultClass="hashMap" parameterClass="java.util.Map">
+        /*partnerEvent.xml - partner.partnerEvent.selectIfSlipLnkgSap 
+        INSERT TBLEP_ACCT_SLIP_LNKG_SAP TABLE
+        */
+            SELECT /*+ordered*/
+                   DT_SLIP                                      DT_SLIP
+                 , SEQ_ACCT_SLIP_LNKG.NEXTVAL                   SEQ
+                 , #IF_KIND#                                    IF_KIND
+                 , #IF_KIND_D#                                  IF_KIND_D    
+                 , #SEQ_NSMS#                                   SEQ_NSMS
+                 , A.TCMCE_PARTNER_IF_INFO_SEQ
+                 , #CD_SLIPTYPE#                                CD_SLIPTYPE
+                 , #CD_COMPANY#                                 CD_COMPANY
+                 , #CD_ACCNTUNIT#                               CD_ACCNTUNIT
+                 , #CD_PLANT#                                   CD_PLANT
+                 , A.CUST_ID                                    SCUSTID                 
+                 , A.CTRT_ID                                    CUSTID                 
+                 , SUBSTR(DT_SLIP,1,6)                          YM_NOTICE
+                 , SUBSTR(DT_SLIP,1,6)                          YYMM
+                 , ''                                           SLIP_NO
+                 , #CD_WRITER#                                  CD_WRITER    
+                 , #CD_WRITERDEPT#                              CD_WRITERDEPT
+                 , #CD_BELONGDEPT#                              CD_BELONGDEPT
+                 , A.GOODS                                      GOODS
+                 , #CD_ITEM#                                    CD_ITEM
+                 , A.CB_SAVING_AMT                              AMT_SUPPLY
+                 , 0                                            AMT_TAX
+                 , A.CB_SAVING_AMT                              AMT_SALE
+                 , 0                                            AS AMT_TRUNC
+                 , A.CB_SAVING_AMT                              TAX_AMT_SALE
+                 , 'N'                                          YN_LEGAL
+                 , A.DT_SLIP                                    YMD_PROOF                 
+                 , 'N'                                          YN_SEND
+                 , 'N'                                          YN_SURTAX
+                 , (SELECT REF_CODE2||DECODE(#WORK_TYPE#,'01','_적립','02','_환입','') 
+                      FROM TSYCM_CODE_DETAIL                                                                   
+                     WHERE COMMON_GRP = 'CMCE102'
+                       AND COMMON_CD  = B.PARTNER_CD
+                       AND USE_YN     = 'Y')                    BIGO
+                 , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')          DT_REGIST
+                 , #SYNC_ID#                                    NO_REGEMP
+                 , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')          DT_MODIFY
+                 , #SYNC_ID#                                    NO_MODEMP
+                 , 'N'                                          YN_SALES
+                 , ''                                           EQP
+                 , ''                                           YM_SALE
+                 , A.KB_EQP                                     KB_EQP
+                 , #RECEIVER_DET#                               RECEIVER_DET
+                 , #systemId#                                   SORC_SYS_ID
+                 , #oprtUnitKey#                                OPRT_UNIT_KEY
+                 , DATA_SEQ                                     DATA_SEQ
+                 , ''                                           CD_SECT
+                 , #busDiv#                                     CD_SO
+                 , ''                                           CD_SVC
+                 , A.CD_PROD                                    CD_PROD
+                 ,'SR00010001'                                  CD_BILL_ITEM
+            FROM TCMCE_PARTNER_IF_ACCT_INFO     A,
+                 TCMCE_PARTNER_IF_INFO          B 
+           WHERE A.DT_SLIP      BETWEEN  TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01' AND TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+             AND A.WORK_TYPE    =   #WORK_TYPE#
+             AND A.PROC_CD      =   '01'
+             AND A.TCMCE_PARTNER_IF_INFO_SEQ = B.TCMCE_PARTNER_IF_INFO_SEQ
+             AND A.CB_SAVING_AMT > 0
+
+    </select>    
+    <!-- 적금 만기 전월 적립급보류건 재등록/소멸처리 대상  PartnerRsvPayErpSendSchedule.java-->
+    <insert id="insertHldRfndInfo" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.insertHldRfndInfo */
+     <![CDATA[         
+       INSERT INTO TCMCE_PARTNER_IF_ACCT_INFO
+        (
+            DT_SLIP
+            ,WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ
+            ,REQ_DTM
+            ,CTRT_ID
+            ,CUST_ID
+            ,PAY_YYMM
+            ,USE_DD_CNT
+            ,CB_SAVING_AMT
+            ,SORC_SYS_ID
+            ,OPRT_UNIT_KEY
+            ,DATA_SEQ
+            ,CD_BANK
+            ,NO_ACCOUNT_SERNUM
+            ,NO_ACCOUNT
+            ,NM_ACCOUNT
+            ,PROC_CD
+            ,PROC_DT
+            ,CNCL_RESN
+            ,REMARK
+            ,REG_ID
+            ,REG_DT
+            ,CHG_ID
+            ,CHG_DT
+            ,GOODS
+            ,KB_EQP
+            ,CD_PROD            
+        )
+       SELECT 
+             (CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')
+                   ELSE    TO_CHAR(SYSDATE,'YYYYMMDD')                                                              
+             END)                      DT_SLIP
+             
+            ,(CASE  WHEN HLD_CNT  =  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '03'     /*보류-> 재보류*/ 
+                    WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '02'     /*보류소멸*/
+                    ELSE                                                                          '03'     /*지급*/                                                
+             END)                                     WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ
+            ,REQ_DTM
+            ,CTRT_ID
+            ,CUST_ID
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    TO_CHAR(SYSDATE,'YYYYMM')                                                              
+             END) PAY_YYMM                         
+            ,USE_DD_CNT
+            ,CB_SAVING_AMT
+            ,SORC_SYS_ID
+            ,OPRT_UNIT_KEY
+            ,DATA_SEQ
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    CD_BANK                                                              
+             END) CD_BANK
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    NO_ACCOUNT_SERNUM                                                              
+             END) NO_ACCOUNT_SERNUM             
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    NO_ACCOUNT                                                              
+             END) NO_ACCOUNT
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    NM_ACCOUNT                                                              
+             END) NM_ACCOUNT
+            ,(CASE  WHEN HLD_CNT  =  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '04'     /*보류-> 재보류*/ 
+                    WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '01'     /*보류소멸*/
+                    ELSE                                                                          '01'     /*지급*/                                                
+             END)                                     PROC_CD                                      
+            ,PROC_DT
+            ,CNCL_RESN
+            ,(CASE  WHEN HLD_CNT  =  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN  '재보류'  
+                    WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN  '환수처리'
+                    ELSE ''                                                          
+             END)                                                       REMARK                    
+            ,REG_ID
+            ,REG_DT
+            ,CHG_ID
+            ,CHG_DT
+            ,GOODS
+            ,KB_EQP
+            ,CD_PROD
+        FROM (                        
+               SELECT
+                     (SELECT COUNT(*) 
+                            FROM TCMCE_PARTNER_IF_ACCT_INFO 
+                           WHERE DT_SLIP    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-2),'YYYYMM')||'01'  
+                             AND DT_SLIP    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                             AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                             AND WORK_TYPE                  =   '03'  
+                             AND PROC_CD                    =   '04'
+                      ) HLD_CNT
+                      
+                     ,(CASE  WHEN (SELECT COUNT(*) 
+                                    FROM TCMCE_PARTNER_IF_ACCT_INFO 
+                                   WHERE DT_SLIP    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-2),'YYYYMM')||'01'  
+                                     AND DT_SLIP    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                                     AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                                     AND WORK_TYPE                  =   '03'  
+                                     AND PROC_CD                    =   '04'
+                                  ) = 1        THEN (SELECT    NVL(SUM(BILL_AMT-RCPT_AMT),0)
+                                                        FROM   TBLIV_BILL
+                                                        WHERE  BILL_YYMM   < TO_CHAR(SYSDATE,'YYYYMM')
+                                                        AND    CUST_ID     = P1.CUST_ID
+                                                        AND    FULL_PAY_YN = 'N')
+                            WHEN (SELECT COUNT(*) 
+                                    FROM TCMCE_PARTNER_IF_ACCT_INFO 
+                                   WHERE DT_SLIP    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-2),'YYYYMM')||'01'  
+                                     AND DT_SLIP    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                                     AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                                     AND WORK_TYPE                  =   '03'  
+                                     AND PROC_CD                    =   '04'
+                                  ) > 1        THEN (SELECT    NVL(SUM(BILL_AMT-RCPT_AMT),0)
+                                                        FROM   TBLIV_BILL
+                                                        WHERE  BILL_YYMM   < TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')
+                                                        AND    CUST_ID     = P1.CUST_ID
+                                                        AND    FULL_PAY_YN = 'N')                                    
+                     END)                                                       MINAP_AMT  /*미납금액은 만기 M+2기간까지만 본다*/
+                     
+                    ,T2.CTRT_STAT                                               CTRT_STAT
+                    ,P1.TCMCE_PARTNER_IF_INFO_SEQ                               TCMCE_PARTNER_IF_INFO_SEQ
+                    ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')                        REQ_DTM
+                    ,P1.CTRT_ID                                                 CTRT_ID
+                    ,P1.CUST_ID                                                 CUST_ID
+                    ,P1.USE_DD_CNT                                              USE_DD_CNT
+                    ,P1.CB_SAVING_AMT                                           CB_SAVING_AMT
+                    ,#systemId#                                                 SORC_SYS_ID
+                    ,''                                                         OPRT_UNIT_KEY
+                    ,1                                                          DATA_SEQ
+                    ,P1.CD_BANK                                                 CD_BANK
+                    ,P1.NO_ACCOUNT_SERNUM                                       NO_ACCOUNT_SERNUM
+                    ,P1.NO_ACCOUNT                                              NO_ACCOUNT    
+                    ,P1.NM_ACCOUNT                                              NM_ACCOUNT
+                    ,'01'                                                       PROC_CD
+                    ,SYSDATE                                                    PROC_DT
+                    ,null                                                       CNCL_RESN
+                    ,#SYNC_ID#                                                  REG_ID
+                    ,SYSDATE                                                    REG_DT
+                    ,#SYNC_ID#                                                  CHG_ID
+                    ,SYSDATE                                                    CHG_DT
+                    ,P1.GOODS                                                   GOODS
+                    ,P1.KB_EQP                                                  KB_EQP
+                    ,P1.CD_PROD                                                 CD_PROD    
+                 FROM TCMCE_PARTNER_IF_ACCT_INFO        P1
+                     ,TCMCE_PARTNER_IF_INFO             P2                     
+                     ,TCMCT_CTRT_INFO                   T2                              
+                WHERE 1=1
+                  AND P1.DT_SLIP                    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'  
+                  AND P1.DT_SLIP                    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                  AND P1.WORK_TYPE                  =   '03'  
+                  AND P1.PROC_CD                    =   '04'                  
+                  AND P1.CB_SAVING_AMT              >   0   
+                  AND P1.TCMCE_PARTNER_IF_INFO_SEQ  =   P2.TCMCE_PARTNER_IF_INFO_SEQ
+                  AND NVL(P2.CB_PV_STATUS,'X')      NOT IN ('F','C')                                     
+                  AND P1.CTRT_ID                    =   T2.CTRT_ID     
+                  AND T2.INACT_DTTM                 =   '99991231235959' -- 현재유효한 계약정보
+                  AND NOT EXISTS (SELECT * 
+                                    FROM TCMCE_PARTNER_IF_ACCT_INFO
+                                   WHERE DT_SLIP            >=   TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                                     AND DT_SLIP            <=   TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')   
+                                     AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                                     AND NVL(PROC_CD,'XX') NOT IN( '03')
+                                     AND CB_SAVING_AMT > 0
+                                   )
+            )
+                                          
+
+        ]]>    
+    </insert>
+     
+    <!-- 적금 만기 전월 적립급보류건 재등록/소멸처리 대상  PartnerRsvPayErpSendSchedule.java-->
+    <select id="selectHldRfndInfo" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.selectHldRfndInfo */
+     <![CDATA[         
+       SELECT 
+             (CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')
+                   ELSE    TO_CHAR(SYSDATE,'YYYYMMDD')                                                              
+             END)                      DT_SLIP
+             
+            ,(CASE  WHEN HLD_CNT  =  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '03'     /*보류-> 재보류*/ 
+                    WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '02'     /*보류소멸*/
+                    ELSE                                                                          '03'     /*지급*/                                                
+             END)                                     WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ
+            ,REQ_DTM
+            ,CTRT_ID
+            ,CUST_ID
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    TO_CHAR(SYSDATE,'YYYYMM')                                                              
+             END) PAY_YYMM                         
+            ,USE_DD_CNT
+            ,CB_SAVING_AMT
+            ,SORC_SYS_ID
+            ,OPRT_UNIT_KEY
+            ,DATA_SEQ
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    CD_BANK                                                              
+             END) CD_BANK
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    NO_ACCOUNT_SERNUM                                                              
+             END) NO_ACCOUNT_SERNUM             
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    NO_ACCOUNT                                                              
+             END) NO_ACCOUNT
+            ,(CASE  WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   NULL
+                   ELSE    NM_ACCOUNT                                                              
+             END) NM_ACCOUNT
+            ,(CASE  WHEN HLD_CNT  =  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '04'     /*보류-> 재보류*/ 
+                    WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN   '01'     /*보류소멸*/
+                    ELSE                                                                          '01'     /*지급*/                                                
+             END)                                     PROC_CD                                      
+            ,PROC_DT
+            ,CNCL_RESN
+            ,(CASE  WHEN HLD_CNT  =  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN  '재보류'  
+                    WHEN HLD_CNT  >  1 AND (MINAP_AMT > 0 OR  CTRT_STAT IN('50','90'))     THEN  '환수처리'
+                    ELSE ''                                                          
+             END)                                                       REMARK                    
+            ,REG_ID
+            ,REG_DT
+            ,CHG_ID
+            ,CHG_DT
+            ,GOODS
+            ,KB_EQP
+            ,CD_PROD
+        FROM (                        
+               SELECT
+                     (SELECT COUNT(*) 
+                            FROM TCMCE_PARTNER_IF_ACCT_INFO 
+                           WHERE DT_SLIP    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-2),'YYYYMM')||'01'  
+                             AND DT_SLIP    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                             AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                             AND WORK_TYPE                  =   '03'  
+                             AND PROC_CD                    =   '04'
+                      ) HLD_CNT
+                      
+                     ,(CASE  WHEN (SELECT COUNT(*) 
+                                    FROM TCMCE_PARTNER_IF_ACCT_INFO 
+                                   WHERE DT_SLIP    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-2),'YYYYMM')||'01'  
+                                     AND DT_SLIP    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                                     AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                                     AND WORK_TYPE                  =   '03'  
+                                     AND PROC_CD                    =   '04'
+                                  ) = 1        THEN (SELECT    NVL(SUM(BILL_AMT-RCPT_AMT),0)
+                                                        FROM   TBLIV_BILL
+                                                        WHERE  BILL_YYMM   < TO_CHAR(SYSDATE,'YYYYMM')
+                                                        AND    CUST_ID     = P1.CUST_ID
+                                                        AND    FULL_PAY_YN = 'N')
+                            WHEN (SELECT COUNT(*) 
+                                    FROM TCMCE_PARTNER_IF_ACCT_INFO 
+                                   WHERE DT_SLIP    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-2),'YYYYMM')||'01'  
+                                     AND DT_SLIP    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                                     AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                                     AND WORK_TYPE                  =   '03'  
+                                     AND PROC_CD                    =   '04'
+                                  ) > 1        THEN (SELECT    NVL(SUM(BILL_AMT-RCPT_AMT),0)
+                                                        FROM   TBLIV_BILL
+                                                        WHERE  BILL_YYMM   < TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')
+                                                        AND    CUST_ID     = P1.CUST_ID
+                                                        AND    FULL_PAY_YN = 'N')                                    
+                     END)                                                       MINAP_AMT  /*미납금액은 만기 M+2기간까지만 본다*/
+                     
+                    ,T2.CTRT_STAT                                               CTRT_STAT
+                    ,P1.TCMCE_PARTNER_IF_INFO_SEQ                               TCMCE_PARTNER_IF_INFO_SEQ
+                    ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')                        REQ_DTM
+                    ,P1.CTRT_ID                                                 CTRT_ID
+                    ,P1.CUST_ID                                                 CUST_ID
+                    ,P1.USE_DD_CNT                                              USE_DD_CNT
+                    ,P1.CB_SAVING_AMT                                           CB_SAVING_AMT
+                    ,#systemId#                                                 SORC_SYS_ID
+                    ,''                                                         OPRT_UNIT_KEY
+                    ,1                                                          DATA_SEQ
+                    ,P1.CD_BANK                                                 CD_BANK
+                    ,P1.NO_ACCOUNT_SERNUM                                       NO_ACCOUNT_SERNUM
+                    ,P1.NO_ACCOUNT                                              NO_ACCOUNT    
+                    ,P1.NM_ACCOUNT                                              NM_ACCOUNT
+                    ,'01'                                                       PROC_CD
+                    ,SYSDATE                                                    PROC_DT
+                    ,null                                                       CNCL_RESN
+                    ,#SYNC_ID#                                                  REG_ID
+                    ,SYSDATE                                                    REG_DT
+                    ,#SYNC_ID#                                                  CHG_ID
+                    ,SYSDATE                                                    CHG_DT
+                    ,P1.GOODS                                                   GOODS
+                    ,P1.KB_EQP                                                  KB_EQP
+                    ,P1.CD_PROD                                                 CD_PROD    
+                 FROM TCMCE_PARTNER_IF_ACCT_INFO        P1
+                     ,TCMCE_PARTNER_IF_INFO             P2                     
+                     ,TCMCT_CTRT_INFO                   T2                              
+                WHERE 1=1
+                  AND P1.DT_SLIP                    >=  TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'  
+                  AND P1.DT_SLIP                    <=  TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')
+                  AND P1.WORK_TYPE                  =   '03'  
+                  AND P1.PROC_CD                    =   '04'                  
+                  AND P1.CB_SAVING_AMT              >   0   
+                  AND P1.TCMCE_PARTNER_IF_INFO_SEQ  =   P2.TCMCE_PARTNER_IF_INFO_SEQ
+                  AND NVL(P2.CB_PV_STATUS,'X')      NOT IN ('F','C')                                     
+                  AND P1.CTRT_ID                    =   T2.CTRT_ID     
+                  AND T2.INACT_DTTM                 =   '99991231235959' -- 현재유효한 계약정보
+                  AND NOT EXISTS (SELECT * 
+                                    FROM TCMCE_PARTNER_IF_ACCT_INFO
+                                   WHERE DT_SLIP            >=   TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                                     AND DT_SLIP            <=   TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')   
+                                     AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                                     AND NVL(PROC_CD,'XX') NOT IN( '03')
+                                     AND CB_SAVING_AMT > 0
+                                   )
+            )
+                                          
+
+        ]]>    
+    </select>       
+    <!-- 적금 만기 전월 적립급 지급 대상  PartnerRsvPayErpSendSchedule.java-->
+    <insert id="insertRsvPayInfo" parameterClass="map">    
+    /* partnerEvent.xml - partner.partnerEvent.insertRsvPayInfo */
+     <![CDATA[          
+        INSERT INTO TCMCE_PARTNER_IF_ACCT_INFO
+        (
+            DT_SLIP
+            ,WORK_TYPE
+            ,TCMCE_PARTNER_IF_INFO_SEQ
+            ,REQ_DTM
+            ,CTRT_ID
+            ,CUST_ID
+            ,PAY_YYMM
+            ,USE_DD_CNT
+            ,CB_SAVING_AMT
+            ,SORC_SYS_ID
+            ,OPRT_UNIT_KEY
+            ,DATA_SEQ
+            ,CD_BANK
+            ,NO_ACCOUNT_SERNUM
+            ,NO_ACCOUNT
+            ,NM_ACCOUNT
+            ,PROC_CD
+            ,PROC_DT
+            ,CNCL_RESN
+            ,REMARK
+            ,REG_ID
+            ,REG_DT
+            ,CHG_ID
+            ,CHG_DT
+            ,GOODS
+            ,KB_EQP
+            ,CD_PROD            
+            )     
+        WITH PART_LIST AS (      
+                      /*전월 적금만기*/ 
+                     SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                    
+                           ,ACC_NO 
+                           ,CTRT_USE_YN  
+                           ,ACC_USE_YN   
+                           ,COMBINE_USE_YN                                                                   
+                           ,P1.CI
+                           ,P1.PARTNER_CD
+                           ,P1.CTRT_ID                    
+                           ,P1.TERM_DT
+                           ,P1.EXPIRY_DT
+                           ,P1.SAVE_ACC_NO
+                           ,LEAST(NVL(P1.TERM_DT,P1.EXPIRY_DT)  ,P1.EXPIRY_DT) REAL_EXPIRY_DT
+                           ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO                               
+                       FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                                     
+                      WHERE 1=1       
+                        AND NVL(P1.CB_PV_STATUS,'X') NOT IN ( 'F','C')  /*ERP기전송건 제외*/
+                        AND P1.ACC_USE_YN   =   'Y'                     /*적금계좌가 만기이면 요금제해지일때 보류처리함*/             
+                        AND LEAST(P1.EXPIRY_DT,NVL(P1.TERM_DT,P1.EXPIRY_DT)) >= TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'
+                        AND LEAST(P1.EXPIRY_DT,NVL(P1.TERM_DT,P1.EXPIRY_DT)) <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')                             
+                        AND NOT(TO_DATE(NVL(P1.TERM_DT,P1.EXPIRY_DT),'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',P1.PARTNER_CD)) <= TO_DATE(P1.EXPIRY_DT, 'YYYYMMDD'))
+                         )      
+       SELECT 
+            TO_CHAR(SYSDATE,'YYYYMMDD')                                 DT_SLIP
+            ,'03'
+            ,P1.TCMCE_PARTNER_IF_INFO_SEQ
+            ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')                        REQ_DTM
+            ,P1.CTRT_ID                                                 CTRT_ID
+            ,T3.CUST_ID                                                 CUST_ID
+            ,TO_CHAR(SYSDATE,'YYYYMM')                                  PAY_YYMM
+            ,(SELECT SUM(USE_DD_CNT)
+                 FROM TCMCE_PARTNER_IF_ACCT_INFO
+                WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                  AND PROC_CD IN ('05')
+                  AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                  AND CTRT_ID=P1.CTRT_ID
+                  AND CUST_ID=T3.CUST_ID            
+             )                                                          USE_DD_CNT
+            ,(SELECT SUM(DECODE(WORK_TYPE,'01',1, -1) * CB_SAVING_AMT) 
+                 FROM TCMCE_PARTNER_IF_ACCT_INFO
+                WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                  AND PROC_CD IN ('05')
+                  AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                  AND CTRT_ID=P1.CTRT_ID
+                  AND CUST_ID=T3.CUST_ID
+              )                                                         CB_SAVING_AMT /*지급대상금액; 환수,기지급이 있으면 0원 임.*/ 
+            ,#systemId#                                                 SORC_SYS_ID
+            ,''                                                         OPRT_UNIT_KEY   /*ERP전송시점에 생성*/
+            ,1                                                          DATA_SEQ
+            ,(SELECT REF_CODE3 
+                      FROM TSYCM_CODE_DETAIL                                                                   
+                     WHERE COMMON_GRP = 'CMCE102'
+                       AND COMMON_CD  = P1.PARTNER_CD
+                       AND USE_YN     = 'Y')                            CD_BANK
+            ,T3.CUST_ID                                                 NO_ACCOUNT_SERNUM /*고객번호*/
+            ,FSYCO_ENCRYPT(SAVE_ACC_NO,'','',0)                         NO_ACCOUNT
+            ,T3.CUST_NM                                                 NM_ACCOUNT  
+            ,(CASE WHEN (FCMCO_GET_MINAP(T3.CUST_ID)  >   0
+                           OR
+                         (T2.CTRT_STAT IN ('50', '90') AND T2.TERM_DT < P1.REAL_EXPIRY_DT) )                      
+                       THEN '04'  /*연체금,해지  보류등록*/  
+                   ELSE '01'                                            
+             END)                                                       PROC_CD
+            ,SYSDATE                                                    PROC_DT
+            ,''                                                         CNCL_RESN
+            ,(CASE WHEN FCMCO_GET_MINAP(T3.CUST_ID)  >   0   THEN '*연체금 : '||FCMCO_GET_MINAP(T3.CUST_ID)   
+                   WHEN (T2.CTRT_STAT IN ('50', '90') AND  T2.TERM_DT < P1.REAL_EXPIRY_DT)  THEN '*해지상태'
+                   WHEN (T2.CTRT_STAT IN ('50', '90') AND  T2.TERM_DT >= P1.REAL_EXPIRY_DT)  THEN '*만기이후 해지 지급등록'
+                   ELSE '지급등록'                                            
+             END)                                                       REMARK    
+            ,#SYNC_ID#                                                  REG_ID
+            ,SYSDATE                                                    REG_DT
+            ,#SYNC_ID#                                                  CHG_ID
+            ,SYSDATE                                                    CHG_DT
+            ,T4.PROD_GRP                                                GOODS
+             ,(CASE WHEN T4.PROD_GRP IN ('K','L','B','M') THEN 'C' 
+                   WHEN T4.PROD_GRP IN ('O','U') THEN 'U' 
+                   ELSE '' 
+              END)                                                      KB_EQP   
+             ,T2.BASIC_PROD_CD                                          CD_PROD                                                          
+         FROM PART_LIST         P1
+             ,TCMCT_CTRT_INFO   T2
+             ,TCMCU_CUST_INFO   T3
+             ,TP_PROD           T4
+        WHERE R_NO                  = 1
+          AND P1.CI                 = T3.IPIN_NUM
+          AND P1.CTRT_ID            = T2.CTRT_ID 
+          AND T2.BASIC_PROD_CD      = T4.PROD_CD          
+          AND T2.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+          --AND T2.CTRT_STAT NOT IN ('50', '90')                   
+          --AND P1.REAL_EXPIRY_DT||'000000'  BETWEEN T2.ACT_DTTM   AND T2.INACT_DTTM          
+          AND NOT EXISTS (SELECT * 
+                            FROM TCMCE_PARTNER_IF_ACCT_INFO
+                           WHERE DT_SLIP            >=   TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                             AND DT_SLIP            <=   TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')
+                             AND WORK_TYPE          =   '03'
+                             AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                             AND NVL(PROC_CD,'XX') NOT IN( '03') /*취소이외건이 있으면 생성안함.*/
+                           )          
+        ]]>    
+    </insert>      
+    
+    <!-- 적금 만기 전월 적립급 지급 대상  PartnerRsvPayErpSendSchedule.java-->
+    <select id="selectRsvPayInfo" parameterClass="map">    
+    /* partnerEvent.xml - partner.partnerEvent.selectRsvPayInfo */
+     <![CDATA[          
+        WITH PART_LIST AS (      
+                      /*전월 적금만기*/ 
+                     SELECT P1.TCMCE_PARTNER_IF_INFO_SEQ                    
+                           ,ACC_NO 
+                           ,CTRT_USE_YN  
+                           ,ACC_USE_YN   
+                           ,COMBINE_USE_YN                                                                   
+                           ,P1.CI
+                           ,P1.PARTNER_CD
+                           ,P1.CTRT_ID                    
+                           ,P1.TERM_DT
+                           ,P1.EXPIRY_DT
+                           ,P1.SAVE_ACC_NO
+                           ,LEAST(NVL(P1.TERM_DT,P1.EXPIRY_DT)  ,P1.EXPIRY_DT) REAL_EXPIRY_DT
+                           ,ROW_NUMBER() OVER(PARTITION BY CI ORDER BY P1.TCMCE_PARTNER_IF_INFO_SEQ DESC) AS R_NO                               
+                       FROM MHVMVNO.TCMCE_PARTNER_IF_INFO P1                                                     
+                      WHERE 1=1       
+                        AND NVL(P1.CB_PV_STATUS,'X') NOT IN ( 'F','C')  /*ERP기전송건 제외*/
+                        AND P1.ACC_USE_YN   =   'Y'                     /*적금계좌가 만기이면 요금제해지일때 보류처리함*/             
+                        AND LEAST(P1.EXPIRY_DT,NVL(P1.TERM_DT,P1.EXPIRY_DT)) >= TO_CHAR(ADD_MONTHS(SYSDATE,-1),'YYYYMM')||'01'
+                        AND LEAST(P1.EXPIRY_DT,NVL(P1.TERM_DT,P1.EXPIRY_DT)) <= TO_CHAR(LAST_DAY(ADD_MONTHS(SYSDATE,-1)),'YYYYMMDD')                             
+                        AND NOT(TO_DATE(NVL(P1.TERM_DT,P1.EXPIRY_DT),'YYYYMMDD') + TO_NUMBER(FSYCO_GET_REF_CODE('CMCE102',P1.PARTNER_CD)) <= TO_DATE(P1.EXPIRY_DT, 'YYYYMMDD'))
+                         )      
+       SELECT 
+            TO_CHAR(SYSDATE,'YYYYMMDD')                                 DT_SLIP
+            ,'03'
+            ,P1.TCMCE_PARTNER_IF_INFO_SEQ
+            ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')                        REQ_DTM
+            ,P1.CTRT_ID                                                 CTRT_ID
+            ,T3.CUST_ID                                                 CUST_ID
+            ,TO_CHAR(SYSDATE,'YYYYMM')                                  PAY_YYMM
+            ,(SELECT SUM(USE_DD_CNT)
+                 FROM TCMCE_PARTNER_IF_ACCT_INFO
+                WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                  AND PROC_CD IN ('05')
+                  AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                  AND CTRT_ID=P1.CTRT_ID
+                  AND CUST_ID=T3.CUST_ID            
+             )                                                          USE_DD_CNT
+            ,(SELECT SUM(DECODE(WORK_TYPE,'01',1, -1) * CB_SAVING_AMT) 
+                 FROM TCMCE_PARTNER_IF_ACCT_INFO
+                WHERE DT_SLIP < TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                  AND PROC_CD IN ('05')
+                  AND TCMCE_PARTNER_IF_INFO_SEQ = P1.TCMCE_PARTNER_IF_INFO_SEQ
+                  AND CTRT_ID=P1.CTRT_ID
+                  AND CUST_ID=T3.CUST_ID
+              )                                                         CB_SAVING_AMT /*지급대상금액; 환수,기지급이 있으면 0원 임.*/ 
+            ,#systemId#                                                 SORC_SYS_ID
+            ,''                                                         OPRT_UNIT_KEY   /*ERP전송시점에 생성*/
+            ,1                                                          DATA_SEQ
+            ,(SELECT REF_CODE3 
+                      FROM TSYCM_CODE_DETAIL                                                                   
+                     WHERE COMMON_GRP = 'CMCE102'
+                       AND COMMON_CD  = P1.PARTNER_CD
+                       AND USE_YN     = 'Y')                            CD_BANK
+            ,T3.CUST_ID                                                 NO_ACCOUNT_SERNUM /*고객번호*/
+            ,FSYCO_ENCRYPT(SAVE_ACC_NO,'','',0)                         NO_ACCOUNT
+            ,T3.CUST_NM                                                 NM_ACCOUNT  
+            ,(CASE WHEN (FCMCO_GET_MINAP(T3.CUST_ID)  >   0
+                           OR
+                         (T2.CTRT_STAT IN ('50', '90') AND T2.TERM_DT < P1.REAL_EXPIRY_DT) )                      
+                       THEN '04'  /*연체금,해지  보류등록*/  
+                   ELSE '01'                                            
+             END)                                                       PROC_CD
+            ,SYSDATE                                                    PROC_DT
+            ,''                                                         CNCL_RESN
+            ,(CASE WHEN FCMCO_GET_MINAP(T3.CUST_ID)  >   0   THEN '*연체금 : '||FCMCO_GET_MINAP(T3.CUST_ID)   
+                   WHEN (T2.CTRT_STAT IN ('50', '90') AND  T2.TERM_DT < P1.REAL_EXPIRY_DT)  THEN '*해지상태'
+                   WHEN (T2.CTRT_STAT IN ('50', '90') AND  T2.TERM_DT >= P1.REAL_EXPIRY_DT)  THEN '*만기이후 해지 지급등록'
+                   ELSE '지급등록'                                            
+             END)                                                       REMARK    
+            ,#SYNC_ID#                                                  REG_ID
+            ,SYSDATE                                                    REG_DT
+            ,#SYNC_ID#                                                  CHG_ID
+            ,SYSDATE                                                    CHG_DT
+            ,T4.PROD_GRP                                                GOODS
+             ,(CASE WHEN T4.PROD_GRP IN ('K','L','B','M') THEN 'C' 
+                   WHEN T4.PROD_GRP IN ('O','U') THEN 'U' 
+                   ELSE '' 
+              END)                                                      KB_EQP   
+             ,T2.BASIC_PROD_CD                                          CD_PROD                                                          
+         FROM PART_LIST         P1
+             ,TCMCT_CTRT_INFO   T2
+             ,TCMCU_CUST_INFO   T3
+             ,TP_PROD           T4
+        WHERE R_NO                  = 1
+          AND P1.CI                 = T3.IPIN_NUM
+          AND P1.CTRT_ID            = T2.CTRT_ID 
+          AND T2.BASIC_PROD_CD      = T4.PROD_CD          
+          AND T2.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+          --AND T2.CTRT_STAT NOT IN ('50', '90')                   
+          --AND P1.REAL_EXPIRY_DT||'000000'  BETWEEN T2.ACT_DTTM   AND T2.INACT_DTTM          
+          AND NOT EXISTS (SELECT * 
+                            FROM TCMCE_PARTNER_IF_ACCT_INFO
+                           WHERE DT_SLIP            >=   TO_CHAR(SYSDATE,'YYYYMM')||'01'
+                             AND DT_SLIP            <=   TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')
+                             AND WORK_TYPE          =   '03'
+                             AND TCMCE_PARTNER_IF_INFO_SEQ  =   P1.TCMCE_PARTNER_IF_INFO_SEQ
+                             AND NVL(PROC_CD,'XX') NOT IN( '03') /*취소이외건이 있으면 생성안함.*/
+                           )          
+        ]]>    
+    </select>      
+
+    <!-- 적립금지급 erp전송대상-->
+    <select id="getPartnerTcmotAcctfndSap" resultClass="hashMap" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getPartnerTcmotAcctfndSap */
+     <![CDATA[     
+        SELECT  /*+ordered*/
+                DT_SLIP                                         DT_SLIP
+                ,WORK_TYPE                                      WORK_TYPE
+                ,A.TCMCE_PARTNER_IF_INFO_SEQ                    TCMCE_PARTNER_IF_INFO_SEQ  
+                ,A.REQ_DTM                                      REQ_DTM
+                
+                ,'05'                                           IF_KIND                           
+                ,'96'                                           IF_KIND_D                         
+                ,1                                              SEQ_NSMS                                          
+                ,'NC'                                           CD_SLIPTYPE                       
+                ,'1000'                                         CD_COMPANY                        
+                ,'A001'                                         CD_ACCNTUNIT                      
+                ,'48'                                           CD_PLANT              
+                ,A.CUST_ID                                      SCUSTID
+                ,A.NM_ACCOUNT                                   CUSTID
+                ,SUBSTR(DT_SLIP,1,6)                            YM_NOTICE
+                ,SUBSTR(DT_SLIP,1,6)                            YYMM
+                , ''                                            SLIP_NO
+                ,'004555'                                       CD_WRITER                        
+                ,'E00030'                                       CD_WRITERDEPT
+                ,'E00030'                                       CD_BELONGDEPT
+                ,'6'                                            GOODS
+                ,'06'                                           CD_ITEM
+                ,A.CB_SAVING_AMT                                AMT_SUPPLY
+                ,0                                              AMT_TAX
+                ,A.CB_SAVING_AMT                                AMT_SALE
+                ,0                                              AMT_TRUNC
+                ,A.CB_SAVING_AMT                                TAX_AMT_SALE
+                ,'N'                                            YN_LEGAL
+                ,DT_SLIP                                        YMD_PROOF
+                ,'N'                                            YN_SEND
+                ,'N'                                            YN_SURTAX
+                ,(SELECT REF_CODE2||'_지급'
+                      FROM TSYCM_CODE_DETAIL                                                                   
+                     WHERE COMMON_GRP = 'CMCE102'
+                       AND COMMON_CD  = B.PARTNER_CD
+                       AND USE_YN     = 'Y')                    BIGO
+                ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')            DT_REGIST
+                ,'PART06'                                       NO_REGEMP
+                ,TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')            DT_MODIFY
+                ,'PART06'                                       NO_MODEMP
+                ,'Y'                                            YN_SALES
+                ,'N'                                            KB_EQP
+                ,'99'                                           RECEIVER_DET
+                ,A.CD_BANK                                      CD_BANK
+                ,A.NO_ACCOUNT_SERNUM                            NO_ACCOUNT_SERNUM
+                ,A.NO_ACCOUNT                                   NO_ACCOUNT
+                ,A.NM_ACCOUNT                                   NM_ACCOUNT
+                ,'0'                                            NO_TAX_SERNUM
+                ,SUBSTRB(T3.BASE_ADDR || ' ' || T3.ADDR_DTL, 1, 130)  KN_ADDRESS
+                ,A.NM_ACCOUNT                                   KN_TRADE   
+                ,'A001'                                         MNGE_SO_CD
+            FROM TCMCE_PARTNER_IF_ACCT_INFO     A,
+                 TCMCE_PARTNER_IF_INFO          B,
+                 TCMCU_CUST_INFO                T3
+           WHERE A.DT_SLIP      BETWEEN  TO_CHAR(SYSDATE,'YYYYMM')||'01' AND TO_CHAR(LAST_DAY(SYSDATE),'YYYYMMDD')
+             AND A.WORK_TYPE    =   '03'
+             AND A.PROC_CD      =   '01'
+             AND NVL(B.CB_PV_STATUS,'X') NOT IN ( 'F','C')
+             AND B.CI           =   T3.IPIN_NUM
+             AND A.CB_SAVING_AMT <> 0
+             AND A.TCMCE_PARTNER_IF_INFO_SEQ = B.TCMCE_PARTNER_IF_INFO_SEQ              
+        ]]>    
+    </select>
+    
+    <!-- getOprtUnitKey -->
+    <select id="getOprtUnitKeyForAcctLinkSap" resultClass="java.lang.String" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.getOprtUnitKeyForAcctLinkSap */      
+        SELECT DECODE(LPAD(TO_NUMBER(SUBSTR(MAX(OPRT_UNIT_KEY),22))+1,4,'0000'),NULL,
+                 #P_PROGRAM_ID# || '_' || TO_CHAR(SYSDATE,'YYMMDD') || '_' || #P_BUS_DIV# || '_' || '0001' ,
+                 #P_PROGRAM_ID# || '_' || TO_CHAR(SYSDATE,'YYMMDD') || '_' || #P_BUS_DIV# || '_' || LPAD(TO_NUMBER(SUBSTR(MAX(OPRT_UNIT_KEY),22))+1,4,'0000')
+                 ) OPRT_UNIT_KEY
+          FROM TCMOT_ACCT_LNKG_SAP
+         WHERE SORC_SYS_ID = #P_SYSTEM_ID#
+           AND OPRT_UNIT_KEY LIKE  #P_PROGRAM_ID# || '_' || TO_CHAR(SYSDATE,'YYMMDD') || '_' || #P_BUS_DIV# || '_%'                  
+            
+    </select>
+    
+    <insert id="updatePartnerIfAcctInfo" parameterClass="java.util.Map" >   
+    /* partnerEvent.xml - partner.partnerEvent.updatePartnerIfAcctInfo */       
+        UPDATE TCMCE_PARTNER_IF_ACCT_INFO A
+           SET    
+              PROC_CD = #PROC_CD#
+              ,PROC_DT = SYSDATE
+              <isNotEmpty property="OprtUnitKey">
+              ,OPRT_UNIT_KEY = #OprtUnitKey# 
+              </isNotEmpty>              
+         WHERE DT_SLIP                  = #DT_SLIP#
+         AND   WORK_TYPE                = #WORK_TYPE# 
+         AND   TCMCE_PARTNER_IF_INFO_SEQ = #TCMCE_PARTNER_IF_INFO_SEQ# 
+         AND   REQ_DTM                  = #REQ_DTM#
+          
+    </insert>      
+               
+    <insert id="insertPartnerTcmotAcctfndSap" parameterClass="map">                    
+        INSERT INTO TCMOT_ACCT_LNKG_SAP ( 
+                SORC_SYS_ID                    ,OPRT_UNIT_KEY              ,DATA_SN                ,SEQ
+                ,IF_KIND                       ,IF_KIND_D                  ,SEQ_NSMS               ,BILLS_SEQ
+                ,CD_SLIPTYPE                   ,CD_COMPANY                 ,CD_ACCNTUNIT           ,CD_PLANT
+                
+                ,SCUSTID                       ,CUSTID                     ,YM_NOTICE              ,YYMM
+                ,DT_SLIP                       ,CD_WRITER                  ,CD_WRITERDEPT          ,CD_BELONGDEPT
+                ,GOODS                         ,CD_ITEM                    ,AMT_SUPPLY             ,AMT_TAX
+                
+                ,AMT_SALE                       ,AMT_TRUNC                  ,TAX_AMT_SALE           ,YN_LEGAL
+                ,YMD_PROOF                      ,YN_SEND                    ,YN_SURTAX              ,BIGO
+                ,DT_REGIST                      ,NO_REGEMP                  ,DT_MODIFY              ,NO_MODEMP
+                
+                ,YN_SALES                       ,KB_EQP                     ,RECEIVER_DET           ,CD_BANK
+                ,NO_ACCOUNT_SERNUM              ,NO_ACCOUNT                 ,NM_ACCOUNT             ,NO_TAX_SERNUM
+                ,KN_ADDRESS                     ,KN_TRADE                   ,MNGE_SO_CD             ,RGST_DTTM      
+                ,EAI_STATUS)
+         VALUES (   
+                #P_SYSTEM_ID#,                  #OprtUnitKey#,              '1',                    SEQ_ACCT_SLIP_LNKG_SAP.NEXTVAL,                    
+                #IF_KIND#,                      #IF_KIND_D#,                #SEQ_NSMS#,             TO_CHAR(#TCMCE_PARTNER_IF_INFO_SEQ#)||'NC'||TO_CHAR(SYSDATE,'YYYYMMDD')||'0001',
+                #CD_SLIPTYPE#,                  #CD_COMPANY#,               #CD_ACCNTUNIT#,         #CD_PLANT#,
+                
+                #SCUSTID#,                      #CUSTID#,                   #YM_NOTICE#,            #YYMM#,
+                #DT_SLIP#,                      #CD_WRITER#,                #CD_WRITERDEPT#,        #CD_BELONGDEPT#,
+                #GOODS#,                        #CD_ITEM#,                  #AMT_SUPPLY#,           #AMT_TAX#,
+                
+                #AMT_SALE#,                     #AMT_TRUNC#,                #TAX_AMT_SALE#,         #YN_LEGAL#,
+                #YMD_PROOF#,                    #YN_SEND#,                  #YN_SURTAX#,            #BIGO#,
+                #DT_REGIST#,                    #NO_REGEMP#,                #DT_MODIFY#,            #NO_MODEMP#,
+                
+                #YN_SALES#,                     #KB_EQP#,                   #RECEIVER_DET#,         #CD_BANK#,
+                #NO_ACCOUNT_SERNUM#,            #NO_ACCOUNT#,               #NM_ACCOUNT#,           #NO_TAX_SERNUM#,
+                #KN_ADDRESS#,                   #KN_TRADE#,                 #MNGE_SO_CD#,           SYSDATE,
+                'N')        
+    </insert>         
+
+        
+    <!--   SAP연동  작업단위키 조회 (TB_DATA_LDDNG_STTUS_DTLS)-->
+    <select id="getOprtUnitKey" resultClass="string" parameterClass="map">
+        SELECT F_GET_OPRT_UNIT_KEY(#systemId#,#programId#,#busDiv#) FROM DUAL
+    </select>
+    
+    <!--     ETL 연동적재상태 생성 프로시져 호출 -->
+    <procedure id="pTbDataLddngSttusDtls" parameterClass="map">
+        <![CDATA[
+        DECLARE 
+            P_SYSTEM_ID VARCHAR2(32767);
+            P_OPRT_UNIT_KEY VARCHAR2(32767);
+            OUT_ERR_NUM NUMBER;
+            OUT_ERR_MSG VARCHAR2(32767);
+        BEGIN 
+            P_SYSTEM_ID := #systemId#;
+            P_OPRT_UNIT_KEY := #oprtUnitKey#;
+            OUT_ERR_NUM := NULL;
+            OUT_ERR_MSG := NULL;
+          HVMVNO.P_TB_DATA_LDDNG_STTUS_DTLS  (  P_SYSTEM_ID
+                                             ,P_OPRT_UNIT_KEY                        
+                                             ,#MSGCODE,jdbcType=VARCHAR,javaType=java.lang.String,mode=INOUT#
+                                             ,#MESSAGE,jdbcType=VARCHAR,javaType=java.lang.String,mode=INOUT#
+                                        );
+        
+        END;
+        ]]>
+    </procedure> 
+    
+    <select id="selectTbDataLddngSttusDtlsDuplCnt" resultClass="Integer" parameterClass="map">    
+        SELECT COUNT(1)
+          FROM MHVMVNO.TB_DATA_LDDNG_STTUS_DTLS
+         WHERE SORC_SYS_ID = #systemId#
+           AND OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+    </select>
+    
+    <select id="selectTbDataLddngSttusDtlsList" resultClass="hashMap" parameterClass="map">    
+        SELECT /*+ parrallel(A 4)*/
+               /* 
+               INSERT TB_DATA_LDDNG_STTUS_DTLS TABLE
+               */
+               COUNT(1) AS CNT
+              ,MIN(DT_REGIST) AS DT_REGIST_MIN
+              ,MAX(DT_REGIST) AS DT_REGIST_MAX
+              ,SUM(AMT_SALE) AS AMT_SAL_SUM
+              ,SUM(AMT_SUPPLY) AS ATM_SUPPLY_SUM
+              ,SUM(AMT_TAX) AS AMT_TAX_SUM
+              ,SUM(AMT_TRUNC) AS AMT_TRUNC_SUM
+              ,SUM(TAX_AMT_SALE) AS TAX_AMT_SALE_SUM
+          FROM MHVMVNO.TBLEP_ACCT_SLIP_LNKG_SAP A
+         WHERE SORC_SYS_ID =  #systemId#
+           AND OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+    </select>    
+    
+    <!--    제휴사연동 적립 회계정보 생성 -->
+    <insert id="insertPartnerSaveAcct" parameterClass="java.util.Map">
+    /* partnerEvent.xml - partner.partnerEvent.insertPartnerSaveAcct */
+    <![CDATA[    
+      INSERT INTO TCMCE_PARTNER_IF_ACCT_INFO (
+                  DT_SLIP, WORK_TYPE, TCMCE_PARTNER_IF_INFO_SEQ, REQ_DTM, CTRT_ID
+                , CUST_ID, PAY_YYMM, USE_DD_CNT, CB_SAVING_AMT
+                , GOODS, KB_EQP, CD_PROD, SORC_SYS_ID
+                , OPRT_UNIT_KEY, DATA_SEQ, CD_BANK, NO_ACCOUNT_SERNUM, NO_ACCOUNT
+                , NM_ACCOUNT, PROC_CD, PROC_DT, CNCL_RESN
+                , REMARK, REG_ID, REG_DT, CHG_ID, CHG_DT
+                 )
+      SELECT   CASE WHEN #PREV_MONTH# = '201910' THEN '20191129'
+                    ELSE TO_CHAR(LAST_DAY(TO_DATE(A.PAY_YYMM||'01', 'YYYYMMDD')), 'YYYYMMDD') 
+               END  AS DT_SLIP  -- 전표일자(전월말일), 201910인경우 20191129로 처리
+             , '01' AS WORK_TYPE                -- 작업유형(CMCE108, 01:적립, 02:환수, 03:지급)
+             , A.TCMCE_PARTNER_IF_INFO_SEQ      -- 제휴사 연동정보 일련번호
+             , TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS') AS REQ_DTM  -- 요청일시
+             , A.CTRT_ID                        -- 계약ID
+             , A.CUST_ID                        -- 고객ID
+             , A.PAY_YYMM                       -- 입금년월
+             , A.USE_DD_CNT                     -- 사용일수
+             , A.CB_SAVING_AMT                  -- 캐쉬백 적립금액
+             , A.PROD_GRP AS GOODS              -- 상품
+             , CASE WHEN A.PROD_GRP IN ('K','L','B','M') THEN 'C' 
+                    WHEN A.PROD_GRP IN ('O','U') THEN 'U' 
+                    ELSE '' 
+               END AS KB_EQP                    -- 장비구분
+             , A.BASIC_PROD_CD AS CD_PROD       -- 상품코드
+             , #SORC_SYS_ID# AS SORC_SYS_ID         -- 원천시스템아이디 
+             , #OPRT_UNIT_KEY# AS OPRT_UNIT_KEY     -- 작업단위키 
+             , A.SEQ_NO AS DATA_SEQ                 -- 데이타일련번호(작업단위별 순번)
+             , '' AS CD_BANK                        -- 은행코드
+             , '' AS NO_ACCOUNT_SERNUM              -- 계좌번호일련번호
+             , '' AS NO_ACCOUNT                     -- 계죄번호암호화
+             , '' AS NM_ACCOUNT                     -- 예금주
+             , '01' AS PROC_CD                      -- 처리결과(CMCE109, 01:신청, 02:ERP전송, 03:취소/반려, 04:익월반여예정, 05:처리완료)
+             , SYSDATE AS PROC_DT                   -- 처리일시
+             , '' AS CNCL_RESN                      -- 취소(반려) 사유
+             , NVL((SELECT X.REF_CODE2
+                    FROM   TSYCM_CODE_DETAIL X
+                    WHERE  X.COMMON_GRP = 'CMCE102'
+                    AND    X.COMMON_CD ='01'
+                   ), 'MVNO_하나제휴') || '_적립' AS RMK  -- 비고(MVNO_하나제휴_적립)
+             , #BATCH_ID# AS REG_ID                    -- 등록 사용자ID 
+             , SYSDATE AS REG_DT                       -- 등록 시간
+             , #BATCH_ID# AS CHG_ID                    -- 수정 사용자ID
+             , SYSDATE AS CHG_DT                       -- 수정시간
+      FROM   ( SELECT   A.TCMCE_PARTNER_IF_INFO_SEQ
+                      , A.CTRT_ID
+                      , C.CUST_ID
+                      , A.PAY_YYMM
+                      , A.USE_DD_CNT
+                      , A.CB_SAVING_EXP_AMT AS CB_SAVING_AMT
+                      , C.BASIC_PROD_CD
+                      , C.PROD_GRP
+                      , ROWNUM AS SEQ_NO
+               FROM     TCMCE_PARTNER_IF_PAY A
+                      , TCMCE_PARTNER_IF_INFO B
+                      , TCMCT_CTRT_INFO C
+               WHERE    B.TCMCE_PARTNER_IF_INFO_SEQ = A.TCMCE_PARTNER_IF_INFO_SEQ
+               AND      C.CTRT_ID = B.CTRT_ID
+               AND      C.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+               AND      A.PAY_YYMM = #PREV_MONTH#
+               AND      A.CB_SAVING_EXP_AMT > 0
+               AND      NVL(A.CB_ERP_TRAN_YN,'N') = 'N'
+               ) A
+        ]]>                  
+    </insert> 
+    
+    <!--    제휴사연동 입금정보 수정 처리  -->
+    <update id="updateHanaPartnerIfPay" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.updateHanaPartnerIfPay */
+    <![CDATA[       
+      UPDATE TCMCE_PARTNER_IF_PAY A
+      SET    A.CB_ERP_TRAN_YN = 'Y'
+           , A.CB_ERP_TRAN_DT = SYSDATE                
+           , A.CHG_ID = #BATCH_ID# 
+           , A.CHG_DT = SYSDATE
+      WHERE  (A.TCMCE_PARTNER_IF_INFO_SEQ, A.PAY_YYMM) IN  
+             (SELECT X.TCMCE_PARTNER_IF_INFO_SEQ, X.PAY_YYMM
+              FROM   TCMCE_PARTNER_IF_ACCT_INFO X
+              WHERE  X.SORC_SYS_ID = #SORC_SYS_ID#
+              AND    X.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+              AND    X.PROC_CD = '01'
+             ) 
+        ]]>                
+    </update> 
+    
+    <!--    제휴사연동 입금정보 수정 처리  -->
+    <select id="selectHanaPartnerIfPay" parameterClass="map" resultClass="hashMap">
+    /* partnerEvent.xml - partner.partnerEvent.selectHanaPartnerIfPay 
+       UPDATE TCMCE_PARTNER_IF_PAY TABLE 
+    */
+    <![CDATA[       
+      SELECT 'A.CB_ERP_TRAN_YN = Y '
+           , 'A.CB_ERP_TRAN_DT = ' + SYSDATE                
+           , 'A.CHG_ID = ' + #BATCH_ID# 
+           , 'A.CHG_DT = ' + SYSDATE 
+        FROM TCMCE_PARTNER_IF_PAY A           
+      WHERE  (A.TCMCE_PARTNER_IF_INFO_SEQ, A.PAY_YYMM) IN  
+             (SELECT X.TCMCE_PARTNER_IF_INFO_SEQ, X.PAY_YYMM
+              FROM   TCMCE_PARTNER_IF_ACCT_INFO X
+              WHERE  X.SORC_SYS_ID = #SORC_SYS_ID#
+              AND    X.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+              AND    X.PROC_CD = '01'
+             ) 
+        ]]>                
+    </select>     
+    
+    <!--    제휴사연동 ERP회계연동 처리  -->
+    <insert id="insertPartnerSaveAcctErp" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.insertPartnerSaveAcctErp */
+    <![CDATA[       
+      INSERT INTO TBLEP_ACCT_SLIP_LNKG_SAP (
+                  DT_SLIP, SEQ, IF_KIND, IF_KIND_D, SEQ_NSMS
+                , BILLS_SEQ, CD_SLIPTYPE, CD_COMPANY, CD_ACCNTUNIT, CD_PLANT
+                , SCUSTID, CUSTID, YM_NOTICE, YYMM, CD_WRITER
+                , CD_WRITERDEPT, CD_BELONGDEPT, GOODS, CD_ITEM, AMT_SUPPLY
+                , AMT_TAX, AMT_SALE, AMT_TRUNC, TAX_AMT_SALE, YN_LEGAL
+                , YMD_PROOF, YN_SEND, YN_SURTAX, BIGO, DT_REGIST
+                , NO_REGEMP, DT_MODIFY, NO_MODEMP, YN_SALES, KB_EQP
+                , RECEIVER_DET, SORC_SYS_ID, OPRT_UNIT_KEY, DATA_SEQ, CD_SO
+                , CD_PROD
+                , CD_BILL_ITEM
+                 )
+      SELECT   A.DT_SLIP                                -- 전표일자
+             , SEQ_ACCT_SLIP_LNKG_SAP.NEXTVAL AS SEQ    -- 순번
+             , '05' AS IF_KIND                          -- 구분코드(05 : MVNO)
+             , '17' AS IF_KIND_D                        -- 구분코드상셍(17 : 캐쉬백)
+             , '1' AS SEQ_NSMS                          -- 인터페이스 고유키
+             , TCMCE_PARTNER_IF_INFO_SEQ AS BILLS_SEQ   -- 타시스템키
+             , 'NC' AS CD_SLIPTYPE                      -- 전표유형(NC: 캐쉬백)
+             , '1000' AS CD_COMPANY                     -- 회사
+             , 'A001' AS CD_ACCNTUNIT                   -- 회계단위
+             , '48' AS CD_PLANT                         -- 사업장
+             , A.CUST_ID AS SCUSTID                     -- 통합ID - 고객번호
+             , A.CTRT_ID AS CUSTID                      -- 가입자 - 계약번호
+             , A.PAY_YYMM AS YM_NOTICE                  -- 과금년월
+             , A.PAY_YYMM AS YYMM                       -- 청구년월
+             , '004555' AS CD_WRITER                    -- 작성자
+             , 'E00030' AS CD_WRITERDEPT                -- 작성부서
+             , 'E00030' AS CD_BELONGDEPT                -- 귀속부서
+             , A.GOODS                                   -- 상품
+             , 'S0300001' AS CD_ITEM                    -- 구분코드(S0300001: 캐쉬백 적립)
+             , CB_SAVING_AMT AS AMT_SUPPLY              -- 공급가액
+             , 0 AS AMT_TAX                             -- VAT
+             , CB_SAVING_AMT AS AMT_SALE                -- 매출금액
+             , 0 AS AMT_TRUNC                           -- 원단위
+             , CB_SAVING_AMT AS TAX_AMT_SALE            -- 세후매출액
+             , 'N' AS YN_LEGAL                          -- 매출여부
+             , A.DT_SLIP AS YMD_PROOF                   -- 증빙일자
+             , 'N' AS YN_SEND                           -- 전표처리여부(Y,N)
+             , 'N' AS YN_SURTAX                         -- Y:세무전송,N:미전송
+             , A.REMARK AS BIGO                         -- 비고
+             , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS') AS DT_REGIST        -- 생성일시
+             , #BATCH_ID# AS NO_REGEMP                  -- 생성자
+             , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS') AS DT_MODIFY        -- 수정일시
+             , #BATCH_ID# AS NO_MODEMP                  -- 수정자
+             , 'N' AS YN_SALES                          -- 매출여부
+             , A.KB_EQP                                 -- 장비구분
+             , '01' AS RECEIVER_DET                     -- 수납처상세코드(01: 캐쉬백 적립)
+             , A.SORC_SYS_ID                            -- 원천시스템아이디
+             , A.OPRT_UNIT_KEY                          -- 작업단위키(프로그램아이디(8) + 작업일자(8) + 사업영역코드(4) + 순번(5)
+             , A.DATA_SEQ                               -- 데이타일련번호
+             , 'A001' AS CD_SO                          -- SO코드(회계단위 동일)
+             , A.CD_PROD                                 -- 상품코드
+             , 'SR00010001'                             -- 청구항목코드 
+      FROM   TCMCE_PARTNER_IF_ACCT_INFO A
+      WHERE  A.SORC_SYS_ID = #SORC_SYS_ID#
+      AND    A.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+      AND    A.PROC_CD = '01'
+        ]]>      
+    </insert>   
+    
+    <!--    제휴사연동 ERP회계연동 처리  -->
+    <select id="selectPartnerSaveAcctErp" parameterClass="map" resultClass="hashMap">
+    /* partnerEvent.xml - partner.partnerEvent.selectPartnerSaveAcctErp 
+       INSERT TBLEP_ACCT_SLIP_LNKG_SAP TABLE
+    */
+    <![CDATA[       
+      SELECT   A.DT_SLIP                                -- 전표일자
+             , SEQ_ACCT_SLIP_LNKG_SAP.NEXTVAL AS SEQ    -- 순번
+             , '05' AS IF_KIND                          -- 구분코드(05 : MVNO)
+             , '17' AS IF_KIND_D                        -- 구분코드상셍(17 : 캐쉬백)
+             , '1' AS SEQ_NSMS                          -- 인터페이스 고유키
+             , TCMCE_PARTNER_IF_INFO_SEQ AS BILLS_SEQ   -- 타시스템키
+             , 'NC' AS CD_SLIPTYPE                      -- 전표유형(NC: 캐쉬백)
+             , '1000' AS CD_COMPANY                     -- 회사
+             , 'A001' AS CD_ACCNTUNIT                   -- 회계단위
+             , '48' AS CD_PLANT                         -- 사업장
+             , A.CUST_ID AS SCUSTID                     -- 통합ID - 고객번호
+             , A.CTRT_ID AS CUSTID                      -- 가입자 - 계약번호
+             , A.PAY_YYMM AS YM_NOTICE                  -- 과금년월
+             , A.PAY_YYMM AS YYMM                       -- 청구년월
+             , '004555' AS CD_WRITER                    -- 작성자
+             , 'E00030' AS CD_WRITERDEPT                -- 작성부서
+             , 'E00030' AS CD_BELONGDEPT                -- 귀속부서
+             , A.GOODS                                   -- 상품
+             , 'S0300001' AS CD_ITEM                    -- 구분코드(S0300001: 캐쉬백 적립)
+             , CB_SAVING_AMT AS AMT_SUPPLY              -- 공급가액
+             , 0 AS AMT_TAX                             -- VAT
+             , CB_SAVING_AMT AS AMT_SALE                -- 매출금액
+             , 0 AS AMT_TRUNC                           -- 원단위
+             , CB_SAVING_AMT AS TAX_AMT_SALE            -- 세후매출액
+             , 'N' AS YN_LEGAL                          -- 매출여부
+             , A.DT_SLIP AS YMD_PROOF                   -- 증빙일자
+             , 'N' AS YN_SEND                           -- 전표처리여부(Y,N)
+             , 'N' AS YN_SURTAX                         -- Y:세무전송,N:미전송
+             , A.REMARK AS BIGO                         -- 비고
+             , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS') AS DT_REGIST        -- 생성일시
+             , #BATCH_ID# AS NO_REGEMP                  -- 생성자
+             , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS') AS DT_MODIFY        -- 수정일시
+             , #BATCH_ID# AS NO_MODEMP                  -- 수정자
+             , 'N' AS YN_SALES                          -- 매출여부
+             , A.KB_EQP                                 -- 장비구분
+             , '01' AS RECEIVER_DET                     -- 수납처상세코드(01: 캐쉬백 적립)
+             , A.SORC_SYS_ID                            -- 원천시스템아이디
+             , A.OPRT_UNIT_KEY                          -- 작업단위키(프로그램아이디(8) + 작업일자(8) + 사업영역코드(4) + 순번(5)
+             , A.DATA_SEQ                               -- 데이타일련번호
+             , 'A001' AS CD_SO                          -- SO코드(회계단위 동일)
+             , A.CD_PROD                                 -- 상품코드
+             , 'SR00010001'                             -- 청구항목코드 
+      FROM   TCMCE_PARTNER_IF_ACCT_INFO A
+      WHERE  A.SORC_SYS_ID = #SORC_SYS_ID#
+      AND    A.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+      AND    A.PROC_CD = '01'
+        ]]>      
+    </select>       
+    <!--    제휴사연동 적립 회계정보 처리결과 수정    -->
+    <update id="updatePartnerSaveAcct" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.updatePartnerSaveAcct */
+    <![CDATA[     
+      UPDATE TCMCE_PARTNER_IF_ACCT_INFO A
+      SET    A.PROC_CD = '05'
+           , A.CHG_ID = #BATCH_ID# 
+           , A.CHG_DT = SYSDATE
+      WHERE  A.SORC_SYS_ID = #SORC_SYS_ID#
+      AND    A.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+      AND    A.PROC_CD = '01'
+        ]]>      
+    </update>    
+    
+    <!--    제휴사연동 적립 회계정보 처리결과 수정    -->
+    <select id="selectPartnerSaveAcctUPDATE" parameterClass="map" resultClass="hashMap">
+    /* partnerEvent.xml - partner.partnerEvent.selectPartnerSaveAcct 
+       UPDATE TCMCE_PARTNER_IF_ACCT_INFO TABLE
+    */
+    <![CDATA[     
+      SELECT 'A.PROC_CD = 05'
+           , 'A.CHG_ID = '+ #BATCH_ID# 
+           , 'A.CHG_DT = '+SYSDATE
+        FROM TCMCE_PARTNER_IF_ACCT_INFO A
+      WHERE  A.SORC_SYS_ID = #SORC_SYS_ID#
+      AND    A.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+      AND    A.PROC_CD = '01'
+        ]]>      
+    </select>     
+    
+    <!--    제휴사연동정보 캐시백처리상태 수정  -->
+    <update id="updateHanaPartnerIfCb" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.updateHanaPartnerIfCb */
+    <![CDATA[       
+      UPDATE TCMCE_PARTNER_IF_INFO A
+      SET    A.CB_PROC_STATUS = #CB_PROC_STATUS#               -- R:환수, S:적립
+           , A.CB_PROC_DATE = SYSDATE                
+           , A.CHG_ID = #BATCH_ID# 
+           , A.CHG_DT = SYSDATE
+      WHERE  (A.TCMCE_PARTNER_IF_INFO_SEQ) IN  
+             (SELECT X.TCMCE_PARTNER_IF_INFO_SEQ
+              FROM   TCMCE_PARTNER_IF_ACCT_INFO X
+              WHERE  X.SORC_SYS_ID = #SORC_SYS_ID#
+              AND    X.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+              AND    X.PROC_CD = '05'
+             ) 
+        ]]>                
+    </update>  
+    
+    <!--    제휴사연동정보 캐시백처리상태 수정  -->
+    <select id="selectHanaPartnerIfCb" parameterClass="map" resultClass="hashMap">
+    /* partnerEvent.xml - partner.partnerEvent.selectHanaPartnerIfCb 
+       UPDATE TCMCE_PARTNER_IF_INFO TABLE
+    */
+    <![CDATA[       
+      SELECT 'A.CB_PROC_STATUS = '+#CB_PROC_STATUS#               -- R:환수, S:적립
+           , 'A.CB_PROC_DATE = '+SYSDATE                
+           , 'A.CHG_ID = '+#BATCH_ID# 
+           , 'A.CHG_DT = '+SYSDATE
+        FROM TCMCE_PARTNER_IF_INFO A           
+      WHERE  (A.TCMCE_PARTNER_IF_INFO_SEQ) IN  
+             (SELECT X.TCMCE_PARTNER_IF_INFO_SEQ
+              FROM   TCMCE_PARTNER_IF_ACCT_INFO X
+              WHERE  X.SORC_SYS_ID = #SORC_SYS_ID#
+              AND    X.OPRT_UNIT_KEY = #OPRT_UNIT_KEY#
+              AND    X.PROC_CD = '05'
+             ) 
+        ]]>                
+    </select> 
+        
+     <!--    계좌 불일치 발생으로 캐시백 지급 오류 발생시 LMS발송 대상조회  -->
+    <select id="getCashSapErrSmsSendList" parameterClass="map" resultClass="java.util.LinkedHashMap">
+      /*partnerEvent.xml - partner.partnerEvent.getCashSapErrSmsSendList*/
+      <![CDATA[
+      SELECT   A.DT_SLIP                        -- 전표일자(적립/환수/지급일자)
+             , A.WORK_TYPE                      -- 작업유형(CMCE108, 01:적립, 02:환수, 03:지급)
+             , A.TCMCE_PARTNER_IF_INFO_SEQ      -- 제휴사 연동정보 일련번호
+             , A.REQ_DTM                        -- 요청일시
+             , A.CTRT_ID                        -- 계약ID
+             , A.CUST_ID                        -- 고객ID
+             , B.SVC_TEL_NO                     -- 전화번호  
+             , A.CD_PROD                        -- 상품코드
+             ,(SELECT PROD_NM FROM TP_PROD WHERE PROD_CD = A.CD_PROD) PROD_NM   
+             , A.OPRT_UNIT_KEY                  -- 작업단위키
+             , A.DATA_SEQ                       -- 데이타일련번호(작업단위별 순번)             
+             , A.PROC_CD                        -- 처리결과(CMCE109, 01:신청, 02:ERP전송, 03:취소/반려, 04:익월반여예정, 05:처리완료)
+             , TO_CHAR(A.PROC_DT, 'YYYY-MM-DD HH24:MI:SS') AS PROC_DT  -- 처리일시
+             , A.CNCL_RESN                      -- 취소(반려) 사유
+             , A.REMARK                         -- 비고
+      FROM     TCMCE_PARTNER_IF_ACCT_INFO A
+             , TCMCT_CTRT_INFO B
+      WHERE    B.CTRT_ID = A.CTRT_ID
+      AND      A.DT_SLIP BETWEEN #CURR_FRST_DT# AND TO_CHAR(LAST_DAY(TO_DATE(#CURR_FRST_DT#, 'YYYYMMDD')), 'YYYYMMDD')
+      AND      A.WORK_TYPE = #WORK_TYPE# 
+      AND      A.PROC_CD = #PROC_CD#        
+      AND      NVL(A.SMS_SEND_YN, 'N') = 'N'      
+      AND      B.INACT_DTTM = '99991231235959' -- 현재유효한 계약정보
+      AND      ROWNUM <= 1
+      ORDER BY A.DT_SLIP DESC      
+      ]]> 
+    </select> 
+    
+    <!--  계좌 불일치 발생으로 캐시백 지급 오류 발생시 LMS발송 결과처리  -->
+    <update id="updateAcctInfoSmsSend" parameterClass="map">
+    /* partnerEvent.xml - partner.partnerEvent.updateAcctInfoSmsSend */
+    <![CDATA[       
+      UPDATE TCMCE_PARTNER_IF_ACCT_INFO A
+      SET    A.SMS_SEND_YN = #SMS_SEND_YN# 
+           , A.SMS_SEND_DT = SYSDATE                
+           , A.CHG_ID = #SYNC_ID# 
+           , A.CHG_DT = SYSDATE
+      WHERE  A.DT_SLIP = #DT_SLIP# 
+      AND    A.WORK_TYPE = #WORK_TYPE#
+      AND    A.TCMCE_PARTNER_IF_INFO_SEQ = #TCMCE_PARTNER_IF_INFO_SEQ# 
+      AND    A.REQ_DTM = #REQ_DTM# 
+        ]]>                
+    </update>      
+                           
+</sqlMap>

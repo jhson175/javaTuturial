@@ -1,0 +1,11 @@
+batch.jdbc.driver=oracle.jdbc.driver.OracleDriver
+batch.jdbc.url=jdbc:oracle:thin:@10.10.10.194:1521:MVNODEV
+# use this one for a separate server process so you can inspect the results
+# (or add it to system properties with -D to override at run time).
+# batch.jdbc.url=jdbc:hsqldb:hsql://localhost:9005/samples
+batch.jdbc.user=hvmvno
+batch.jdbc.password=hvmvno2!
+batch.schema=MVNOBATCH
+batch.temp.dir=/tmp
+batch.temp.age=9000
+batch.data.source.init=false

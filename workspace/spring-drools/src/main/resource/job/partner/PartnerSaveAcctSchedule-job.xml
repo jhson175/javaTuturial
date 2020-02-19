@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
+    xmlns:p="http://www.springframework.org/schema/p" xmlns:batch="http://www.springframework.org/schema/batch"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                    http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.1.xsd">
+
+    <import resource="../../batch-context.xml" />
+
+    <!-- Job Parameter -->
+    <bean id="jobParameter" class="com.cjhv.mvno.drools.job.parameter.TimestampJobParameter" />
+
+    <!-- DataSource -->
+    <bean id="champDataSource" class="org.apache.commons.dbcp.BasicDataSource" p:driverClassName="#{props['champ.jdbc.driver']}"
+        p:url="#{props['champ.jdbc.url']}" p:username="#{props['champ.jdbc.user']}" p:password="#{props['champ.jdbc.password']}" />
+    
+     <bean id="batchDataSource" class="org.apache.commons.dbcp.BasicDataSource" p:driverClassName="#{props['batch.jdbc.driver']}"
+        p:url="#{props['batch.jdbc.url']}" p:username="#{props['batch.jdbc.user']}" p:password="#{props['batch.jdbc.password']}" />
+       
+    <!-- JDBC Template -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.simple.SimpleJdbcTemplate">
+        <constructor-arg index="0" ref="champDataSource" />
+    </bean>    
+
+    <!-- Batch Log -->
+    <bean id="BatchLogService" class="com.cjhv.mvno.drools.provision.service.BatchLogServiceImpl" p:jdbcTemplate-ref="jdbcTemplate" />
+    
+    <!-- Batch Schedule -->
+    <bean id="PartnerSaveAcctSchedule" class="com.cjhv.mvno.drools.schedule.partner.PartnerSaveAcctSchedule"
+        p:batchLogService-ref ="BatchLogService"    
+        p:jdbcTemplate-ref="jdbcTemplate"  
+        p:ktSmsApi-ref="KtSmsBizCommon"
+        p:generalDao-ref="generalDao"  
+        p:acctNoUrl="#{props['hana.httpcall.acctNoUrl']}" p:acctInUrl="#{props['hana.httpcall.acctInUrl']}" p:syncId="#{props['hana.httpcall.syncId']}"      
+        p:BATCH_ID="PART05" 
+        p:BTCH_TP_CD="AUTOEXE_DATE"        
+        p:MANUAL_DATE="20191101"
+    />
+    
+    
+
+</beans>

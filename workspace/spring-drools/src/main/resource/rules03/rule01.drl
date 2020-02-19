@@ -1,0 +1,108 @@
+//created on: 2019. 12. 4
+package rule02
+
+//list any import classes here.
+import com.cjhv.mvno.drools.schedule.partner.PartnerCommon;
+import com.cjhv.mvno.drools.batch.BatchInfo;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.cjhv.mvno.drools.util.DateUtil;
+import com.cjhv.mvno.drools.common.utils.StringUtils;
+import java.text.SimpleDateFormat;
+//declare any global variables here
+global java.util.HashMap batchMapG;
+
+rule "시작 파라미터 Manual 모드"
+ salience 10
+  agenda-group "InquiryHana"
+    when
+        $bachTpCd : PartnerCommon(BTCH_TP_CD == "MANUAL")
+    then
+        System.out.println("====================================================");
+        System.out.println("==================시작 파라미터 Manual 모드=============");
+        System.out.println("====================================================");
+        $bachTpCd.setSTD_DT($bachTpCd.getMANUAL_DATE());
+        String stdDt = $bachTpCd.getMANUAL_DATE();
+        insert($bachTpCd);
+end
+
+rule "시작 파라미터 AutoExe 모드"
+salience 10
+  agenda-group "InquiryHana"
+    when
+        $bachTpCd : PartnerCommon(BTCH_TP_CD == "AUTOEXE_DATE")
+    then
+        System.out.println("====================================================");
+        System.out.println("==================시작 파라미터 AutoExe 모드============");
+        System.out.println("====================================================");    
+        String stdDt = $bachTpCd.getBatchDate().get("AUTOEXE_DATE").toString();
+        $bachTpCd.setSTD_DT(stdDt);
+        insert($bachTpCd);
+end
+
+rule "계좌거래내역조회대상 조회"
+  agenda-group "InquiryHana"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        HashMap<String, Object> batchMap = $bachInfo.getBatchInfo();
+        System.out.println($bachInfo.getSTD_DT());
+        String currMonth = $bachInfo.getSTD_DT().toString().substring(0, 6); //당월
+        String prevMonth = DateUtil.addMonth(new SimpleDateFormat("yyyyMM").parse(currMonth), -1).toString().replaceAll("-", "").substring(0, 6); //전월
+        
+        String currMonthFrstDay = currMonth + "01"; //당월1일
+        String prevMonthFrstDay = prevMonth + "01"; //전월1일 
+        String prevMonthlastDay = DateUtil.getYYYYMMDD(DateUtil.addDay(DateUtil.getDateYYYYMMDD(currMonth+"01"), -1)); //전월말일
+            
+        batchMap.put("PREV_MONTH",prevMonth);
+        batchMap.put("PREV_MONTH_FRST_DAY", prevMonthFrstDay);
+        batchMap.put("PREV_MONTH_LAST_DAY", prevMonthlastDay);
+        batchMap.put("PARTNER_CD", "01");
+        batchMapG.put("bachMap",batchMap);
+        
+        System.out.println("====================================================");
+        System.out.println("==================계좌거래내역조회대상 조회===============");
+        System.out.println("====================================================");    
+        
+        List tcmcePartnerIfInfoList = $bachInfo.selectHanaAcctTgtList(((HashMap)batchMapG.get("bachMap")));
+        
+        System.out.println(tcmcePartnerIfInfoList.size());
+        batchMapG.put("partnerList",tcmcePartnerIfInfoList);
+        
+        insert($bachInfo);  
+end   
+
+rule "계좌거래내역조회대상 조회 개별 연동"
+  agenda-group "InquiryHana"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        List tcmcePartnerIfInfoList = (List)batchMapG.get("partnerList");
+        System.out.println(tcmcePartnerIfInfoList.size());
+        HashMap<String, Object> map = (HashMap<String, Object>)tcmcePartnerIfInfoList.get(0);
+        
+        //CI 식별번호
+        String decCi        = StringUtils.nullToStr((String)map.get("DEC_CI"));
+        //계좌번호
+        String acctNo       = StringUtils.nullToStr((String)map.get("ACC_NO"));
+        System.out.println("계좌번호 --------------------------------------> acctNo:" + acctNo);
+        //계약ID
+        String ctrtId       = StringUtils.nullToStr((String)map.get("CTRT_ID"));
+        System.out.println("계약ID --------------------------------------> ctrtId:" + ctrtId);
+        //적립율(제휴사)
+        String savePer      = String.valueOf(map.get("SAVE_PER"));
+        System.out.println("적립율(제휴사) --------------------------------------> savePer:" + savePer);
+        //제조사조회여부 
+        String afcrInqYn     = "Y"; 
+        
+        String paramStr = "ciRcgnNo="+decCi+
+                "&acctNo="+acctNo+
+                "&inqStrDt="+((HashMap)batchMapG.get("bachMap")).get("PREV_MONTH_FRST_DAY")+
+                "&inqEndDt="+((HashMap)batchMapG.get("bachMap")).get("PREV_MONTH_LAST_DAY")+
+                "&afcrInqYn="+afcrInqYn ;
+                
+        System.out.println(paramStr);   
+        
+        HashMap resultHm = $bachInfo.getHanaAcctInquiryInfo(paramStr);            
+end  

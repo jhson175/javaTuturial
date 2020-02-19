@@ -1,0 +1,114 @@
+//created on: 2019. 12. 4
+package rule02
+
+//list any import classes here.
+import com.cjhv.mvno.drools.schedule.partner.PartnerCommon;
+import com.cjhv.mvno.drools.batch.BatchInfo;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.cjhv.mvno.drools.util.DateUtil;
+import java.text.SimpleDateFormat;
+//declare any global variables here
+global java.util.HashMap batchMapG;
+
+rule "시작 파라미터 Manual 모드"
+  agenda-group "RsvPay"
+    when
+        $bachTpCd : PartnerCommon(BTCH_TP_CD == "MANUAL")
+    then
+        System.out.println("====================================================");
+        System.out.println("==================시작 파라미터 Manual 모드=============");
+        System.out.println("====================================================");
+        $bachTpCd.setSTD_DT($bachTpCd.getMANUAL_DATE());
+        String stdDt = $bachTpCd.getMANUAL_DATE();
+        insert($bachTpCd);
+end
+
+rule "시작 파라미터 AutoExe 모드"
+  agenda-group "RsvPay"
+    when
+        $bachTpCd : PartnerCommon(BTCH_TP_CD == "AUTOEXE_DATE")
+    then
+        System.out.println("====================================================");
+        System.out.println("==================시작 파라미터 AutoExe 모드============");
+        System.out.println("====================================================");    
+        String stdDt = $bachTpCd.getBatchDate().get("AUTOEXE_DATE").toString();
+        $bachTpCd.setSTD_DT(stdDt);
+        insert($bachTpCd);
+end
+
+rule "제휴요금제 적립금 ERP연동"
+  agenda-group "RsvPay"
+    when 
+        $bachInfo : PartnerCommon()
+    then
+        System.out.println("====================================================");
+        System.out.println("==================제휴요금제 적립금 ERP연동==============");
+        System.out.println("=====================================================");      
+        HashMap<String, Object> rParam01 = new HashMap<String, Object>();
+        
+        String programId = "CJMFI055";
+        rParam01.put("SYNC_ID", $bachInfo.getBATCH_ID());
+        rParam01.put("SYNC_ID", $bachInfo.getSystemId());
+        rParam01.put("WORK_TYPE",       "03");  //지급
+        
+        System.out.println("====================================================");
+        System.out.println("=========1.1 전월보류건 상태에 따라 재처리등록==============");
+        System.out.println("====================================================="); 
+                
+        List getList = $bachInfo.getHldRfndInfo(((HashMap)rParam01));
+        System.out.println("전월보류건 상태에 따라 재처리등록 SELECT COUNT ["+getList.size()+"]");
+        System.out.println("TCMCE_PARTNER_IF_ACCT_INFO(회계테이블)INSERT");
+        
+        System.out.println("====================================================");
+        System.out.println("=========1.2 적립금지급대상 중간테이블 등록 ==============");
+        System.out.println("====================================================="); 
+                
+        getList = $bachInfo.getRsvPayInfo(((HashMap)rParam01));
+        System.out.println("전월보류건 상태에 따라 재처리등록 SELECT COUNT ["+getList.size()+"]");
+        System.out.println("TCMCE_PARTNER_IF_ACCT_INFO(회계중간테이블)INSERT");        
+
+        System.out.println("====================================================");
+        System.out.println("=========1.2 ERP 전송대상 조회 ========================");
+        System.out.println("====================================================="); 
+        
+        getList = $bachInfo.getPartnerTcmotAcctfndSap(((HashMap)rParam01));
+        System.out.println("ERP 전송대상 조회 SELECT COUNT ["+getList.size()+"]");
+        System.out.println("ERP 전송대상 조회(회계중간테이블)INSERT");        
+
+        System.out.println("====================================================");
+        System.out.println("==========2.1. ERP 연동 작업단위키 생성==================");
+        System.out.println("====================================================");      
+
+        rParam01.put("SYNC_ID", $bachInfo.getBATCH_ID());
+        rParam01.put("P_SYSTEM_ID", $bachInfo.getSystemId());
+        rParam01.put("P_PROGRAM_ID", $bachInfo.getPROGRAM_ID());
+        rParam01.put("P_BUS_DIV", $bachInfo.getBUS_DIV());
+
+        String inKey = $bachInfo.getOprtUnitKeyForAcctLinkSap(((HashMap)rParam01));
+        System.out.println("ERP 연동 작업단위키 생성 Map Value ["+inKey+"]");
+       
+        System.out.println("====================================================");
+        System.out.println("==========2.2. TCMOT_ACCT_LNKG_SAP 테이블 INSERT======");
+        System.out.println("====================================================");      
+
+        System.out.println("TCMOT_ACCT_LNKG_SAP INSERT COUNT ["+getList.size()+"]");
+        
+        System.out.println("====================================================");
+        System.out.println("=====2.3. TCMCE_PARTNER_IF_ACCT_INFO 상태UPDATE======");
+        System.out.println("====================================================");      
+        
+        System.out.println("======PROC_CD ('02') 'ERP 전송'======================");
+        
+        System.out.println("====================================================");
+        System.out.println("=====2.4. TCMCE_PARTNER_IF_INFO 상태UPDATE===========");
+        System.out.println("====================================================");      
+        
+        System.out.println("======TCMCE_PARTNER_IF_ACCT_INFO TABLE==============");
+        System.out.println("PROC_CD ('01')'신청'======================");
+        System.out.println("=======CB_ERP_TRAN_YN '캐시백ERP YN' 값 'Y' UPDATE====");
+        
+        insert($bachInfo);
+end   
+

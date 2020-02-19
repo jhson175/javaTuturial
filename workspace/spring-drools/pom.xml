@@ -1,0 +1,506 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>net.cj.champ</groupId>
+    <artifactId>batch</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>spring-drools</name>
+    <description>spring-drools</description>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.6</maven.compiler.source>
+        <maven.compiler.target>1.6</maven.compiler.target>
+        <targetJdk>1.6</targetJdk>
+        <skipTests>true</skipTests>
+        <spring.version>3.0.7.RELEASE</spring.version>
+    </properties>
+    <repositories>
+        <repository>
+            <id>mvno</id>
+            <name>mvno repository</name>
+            <url>http://nexus.mvno.pjt:8070/content/groups/public/</url>
+        </repository>
+    </repositories>
+    <dependencies>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.6.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.6.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+            <version>3.0.7.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>3.0.7.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+            <version>3.0.7.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ibatis</groupId>
+            <artifactId>ibatis-sqlmap</artifactId>
+            <version>2.3.4.727</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cjhv.mvno</groupId>
+            <artifactId>mvno-framework</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-core</artifactId>
+            <version>2.1.8.RELEASE</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-aop</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-beans</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-context</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-core</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-tx</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-infrastructure</artifactId>
+            <version>2.1.8.RELEASE</version>
+        </dependency>
+        <!-- apache commons -->
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>opensymphony</groupId>
+            <artifactId>quartz</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+        <dependency>
+            <groupId>oracle.jdbc</groupId>
+            <artifactId>ojdbc6</artifactId>
+            <version>11.1.0.7</version>
+        </dependency>
+        <dependency>
+            <groupId>Altibase.jdbc</groupId>
+            <artifactId>Altibase</artifactId>
+            <version>5.5.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kie</groupId>
+            <artifactId>kie-ci</artifactId>
+            <version>6.1.0.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jbpm</groupId>
+            <artifactId>jbpm-kie-services</artifactId>
+            <version>6.1.0.Final</version>
+        </dependency>
+        <!-- logging <dependency> <groupId>org.slf4j</groupId> <artifactId>slf4j-log4j12</artifactId> <version>1.6.4</version> 
+            <optional>true</optional> <exclusions> <exclusion> <artifactId>log4j</artifactId> <groupId>log4j</groupId> </exclusion> </exclusions> 
+            </dependency> <dependency> <groupId>org.slf4j</groupId> <artifactId>jcl-over-slf4j</artifactId> <version>1.6.4</version> 
+            </dependency> <dependency> <groupId>org.slf4j</groupId> <artifactId>slf4j-log4j12</artifactId> <version>1.6.4</version> <optional>true</optional> 
+            </dependency> -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.6.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>1.6.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.6.4</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.16</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>3.0.7.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-test</artifactId>
+            <version>2.1.8.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.18</version>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>cjgroup</artifactId>
+            <version>barbecue-1.5-beta1</version>
+            <classifier>beta1</classifier>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>cjgroup</artifactId>
+            <version>jstruct-2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>VNOInterop</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>cjgms</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>tibero5-jdbc</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <!-- KTSDP LIB start -->
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axiom-api</artifactId>
+            <version>1.2.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axiom-compat</artifactId>
+            <version>1.2.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axiom-dom</artifactId>
+            <version>1.2.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axiom-impl</artifactId>
+            <version>1.2.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-adb</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-adb-codegen</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-ant-plugin</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-clustering</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-codegen</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-corba</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-fastinfoset</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-java2wsdl</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-jaxbri</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-jaxws</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-jibx</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-json</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-kernel</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-metadata</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-mtompolicy</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-saaj</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-soapmonitor-servlet</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-spring</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-base</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-http</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-jms</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-local</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-mail</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-tcp</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-udp</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-transport-xmpp</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>axis2-xmlbeans</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>mail</artifactId>
+            <version>1.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>neethi</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>XmlSchema</artifactId>
+            <version>1.4.7</version>
+        </dependency>
+        <!-- KTSDP LIB end -->
+        <dependency>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.1.46</version>
+        </dependency>
+
+        <!-- JSON LIB 추가 3019.10.07 -->
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1</version>
+        </dependency>
+
+        <!-- 하나은행 암(복)호화 LIB 추가 3019.10.07 -->
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>unetBKDec</artifactId>
+            <version>1</version>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>unetBKEnc</artifactId>
+            <version>1</version>
+        </dependency>
+        <dependency>
+            <groupId>cjgroup</groupId>
+            <artifactId>unetKeyDb</artifactId>
+            <version>1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.7</version>
+        </dependency>
+    </dependencies>
+
+    <!-- <build> <sourceDirectory>${basedir}/src/main/java</sourceDirectory> <outputDirectory>${basedir}/WebContent/WEB-INF/classes</outputDirectory> 
+        <resources> <resource> <directory>${basedir}/src/main/resources</directory> <includes> <include>**/*.*</include> </includes> 
+        </resource> </resources> <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory> <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory> 
+        <testResources> <testResource> <directory>${basedir}/src/test/resources</directory> </testResource> </testResources> <plugins> 
+        <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-compiler-plugin</artifactId> <version>2.3.2</version> 
+        <configuration> <source>1.6</source> <target>1.6</target> <encoding>UTF-8</encoding> </configuration> </plugin> <plugin> 
+        <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-war-plugin</artifactId> <version>2.2</version> <configuration> 
+        <webappDirectory>${basedir}/WebContent</webappDirectory> </configuration> </plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> 
+        <artifactId>maven-site-plugin</artifactId> <version>3.0</version> <configuration> <outputEncoding>utf-8</outputEncoding> 
+        </configuration> </plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-surefire-plugin</artifactId> 
+        <version>2.12</version> <configuration> <skipTests>${skipTests}</skipTests> <excludes> <exclude>**/Abstract*</exclude> <exclude>**/*_Roo_*</exclude> 
+        </excludes> <argLine>-Xmx512M</argLine> </configuration> </plugin> </plugins> </build> -->
+</project>

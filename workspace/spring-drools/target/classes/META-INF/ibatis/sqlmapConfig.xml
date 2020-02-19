@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//ibatis.apache.org//DTD SQL Map Config 2.0//EN"
+            "http://ibatis.apache.org/dtd/sql-map-config-2.dtd">
+<sqlMapConfig>
+    <settings cacheModelsEnabled="false" enhancementEnabled="true" lazyLoadingEnabled="true" maxRequests="32"
+        maxSessions="10" maxTransactions="5" useStatementNamespaces="true" />
+    <!-- 공통인터페이스 관련 refid 로 참조되는 sqlmap 은 먼저 로딩 되어야만 합니다. -->
+    <sqlMap resource="com/cjhv/mvno/include/sql/include.xml" />
+</sqlMapConfig>
