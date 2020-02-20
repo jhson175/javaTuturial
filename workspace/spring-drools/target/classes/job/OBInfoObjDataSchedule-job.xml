@@ -11,7 +11,7 @@
     
     <!-- TEST BEAN -->    
     <bean id="obInfoObjDataScheduleTest" class="com.cjhv.mvno.drools.schedule.OBObjDataSchedule" 
-        p:generalDao-ref="generalDao">
+       >
     </bean>        
     
 </beans>

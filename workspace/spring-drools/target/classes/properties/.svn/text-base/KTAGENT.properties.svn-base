@@ -1,0 +1,26 @@
+#����
+kturl.dev      = http://tb.apigw.kt.com/MVNO
+username.dev   = CJHELLO1(CJM)
+passwd.dev     = ELNCJJI7.ELK/
+reporturl_sms.dev  = http://localhost/KtSdpOpenApiResponse.jsp
+reporturl_mms.dev  = http://localhost/KtSdpOpenApiResponse.jsp
+
+#��������
+#kturl.stg      = http://tb.apigw.kt.com/MVNO
+#221.148.247.19 : 80/433
+kturl.stg      = http://msg.tbapi.kt.com/MVNO
+#username.stg   = CJHELLO1(CJM)
+#passwd.stg     = Q0pIRUxMTzEoQ0pNKQ==
+username.stg   = ilovektf(INL)
+passwd.stg     = ilovektf(INL)
+reporturl_sms.stg  = http://teststg.cjhello.com/kt/openapi/ktSdpOpenApiSms/receiveOpenapiSms.req
+#reporturl_mms.stg  = http://candymobile.cj.net/views/KtSdpOpenApiResponse.jsp
+reporturl_mms.stg  = http://teststg.cjhello.com/kt/openapi/ktSdpOpenApiMms/receiveOpenapiMms.req
+
+#�
+#kturl.prod     = http://apigw.kt.com/MVNO
+kturl.prod     = https://msg.api.kt.com/MVNO
+username.prod  = CJHELLO1(CJM)
+passwd.prod    = Q0pIRUxMTzEoQ0pNKQ==
+reporturl_sms.prod = http://candymobile.cj.net/kt/openapi/ktSdpOpenApiSms/receiveOpenapiSms.req
+reporturl_mms.prod = http://candymobile.cj.net/kt/openapi/ktSdpOpenApiMms/receiveOpenapiMms.req

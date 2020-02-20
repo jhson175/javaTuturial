@@ -1,0 +1,195 @@
+batch.jdbc.driver=com.mysql.jdbc.Driver
+batch.jdbc.url=jdbc:mysql://vmdbms:3306/SPRINGSAMPLES
+batch.jdbc.user=spring
+batch.jdbc.password=spring1234
+batch.schema.script=sql/schema-mysql.sql
+batch.schema.create.enable=false
+
+# CHAMP DATASOURCE For Dev
+champ.jdbc.driver=oracle.jdbc.driver.OracleDriver
+champ.jdbc.url=jdbc:oracle:thin:@10.10.10.194:1521:MVNODEV
+champ.jdbc.user=hvmvno
+champ.jdbc.password=hvmvno2!
+
+# GLS DATASOURCE For Dev
+gls.jdbc.driver=oracle.jdbc.driver.OracleDriver
+gls.jdbc.url=jdbc:oracle:thin:@210.98.159.153:1523:OPENDBT
+gls.jdbc.user=cjhello
+gls.jdbc.password=cjhellodev!@#$
+
+#WMS DB for Dev
+wms.jdbc.driver=oracle.jdbc.driver.OracleDriver
+wms.jdbc.url=jdbc:oracle:thin:@52.2.11.209:1521:ifhub
+wms.jdbc.user=IF_V5
+wms.jdbc.password=kxif_v5!
+
+# KAIT FTP 연동
+kait.ftp.host=10.10.10.61
+kait.ftp.port=21
+kait.ftp.user=mvuser
+kait.ftp.password=mvuser
+kait.ftp.remoteDir=/extsrc/mvuser/cust/imei
+kait.ftp.localDir=C:/Temp
+
+#SGI
+#SGI 개발서버 주소
+sgi.host=173.20.1.215
+ 
+
+# 영업 포트 
+sgi.port=52130
+sgi.timeout=30000
+# 정산 포트 
+sgi.cmp_port=52131
+sgi.cmp_port2=52475
+sgi.cmp_timeout=180000
+# 청구 포트 
+sgi.dmnd.port=52168
+sgi.dmnd.timeout=30000
+
+
+
+#단말분실보험
+#
+# hyndai.path=파일경로
+# hyndai.filename_pattern=파일패턴(1개의 일자 입력값을 받는다.)
+hyundai.path=/HVMVNO/dev/commoninfraDev/WebContent/share/infra/hyundai
+hyundai.filename_pattern={0}.dat
+
+
+#단말분실보험 현대 FTP
+#
+hyundai.ftp.host=52.33.171.224
+hyundai.ftp.port=22
+hyundai.ftp.user=hyundai
+hyundai.ftp.password=2hyundai2
+hyundai.ftp.remoteDir=/home/hyundai
+
+# CJ GLS
+cjgls.table.dlv=MHVMVNO.V_IFST_DLV_REQ_CJHELLO
+cjgls.table.trc=MHVMVNO.V_IFST_TRC_REQ_CJHELLO
+
+#KT상품정보 기준경로
+ktProdInfoDir=C:/test/
+
+#KT상품정보 기준경로(Backup)
+ktProdInfoBckDir=C:/test/back/
+
+#배치결과 SMS발송대상
+batch.result.send.list=01095000018,01065001571
+
+#삼성카드 제휴 발급전문 경로
+smcardUploadDir=C:/CJHV/smcard/
+
+#COUPON UPLOAD DIR
+couponUploadDir=/HVMVNO/stg/commoninfraStg/WebContent/share/infra/coupon/
+batch.result.send.list=01095000018,01065001571
+
+# KAIT 변동관리 연동(복지자격상실) 2014.08.06 김용욱
+kait.qlflost.host=211.57.224.185
+kait.qlflost.out.port=62100
+kait.qlflost.out.timeout=20000
+
+# KAIT 자격확인 연동 2014.10.01 김용욱
+kait.wlrfinq.out.host=211.57.224.185
+kait.wlrfinq.out.port=63101
+kait.wlrfinq.out.timeout=20000
+
+#KAIT 부정가입방지 진위확인 조회 2015.03.16 송유진
+kait.identvfy.out.host=211.57.224.139
+kait.identvfy.out.port=59100
+kait.identvfy.out.timeout=20000
+kait.identvfy.out.seedkey=TCJ591003441A101
+
+#WEBFAX Server IP & PORT  TEST LOCAL
+webfax.out.ip=52.32.211.144
+webfax.out.port=9808
+#webfax.out.ip=127.0.0.1
+#webfax.out.port=11111
+webfax.out.timeout=12000
+
+
+#단말재고이동
+stockmove.out.host=172.23.15.55
+stockmove.out.port=31061
+stockmove.out.timeout=20000
+
+
+#재판매-정산 정보
+resale.accounts.file.input.directory=/MVNO/REV/WS00
+resale.accounts.file.backup.directory=/MVNO/REV/BACKUP/WS00
+resale.accounts.ws01.batchid=ACCOUNT001
+resale.accounts.ws01.regrid=MVNOBATCH
+resale.accounts.ws01.remark=정산 데이터 - 정액대가(후불)
+resale.accounts.ws01.filename=WS01.CJHV.FILEDATE.A.DAT
+resale.accounts.ws02.batchid=ACCOUNT002
+resale.accounts.ws02.regrid=MVNOBATCH
+resale.accounts.ws02.remark=정산 데이터 - 인프라이용대가(후불)
+resale.accounts.ws02.filename=WS02.CJHV.FILEDATE.A.DAT
+resale.accounts.ws03.batchid=ACCOUNT003
+resale.accounts.ws03.regrid=MVNOBATCH
+resale.accounts.ws03.remark=정산 데이터 - 유료부가서비스/와이파이(후불)
+resale.accounts.ws03.filename=WS03.CJHV.FILEDATE.A.DAT
+resale.accounts.ws04.batchid=ACCOUNT004
+resale.accounts.ws04.regrid=MVNOBATCH
+resale.accounts.ws04.remark=정산 데이터 - 종량통화량(후불)
+resale.accounts.ws04.filename=WS04.CJHV.FILEDATE.A.DAT
+resale.accounts.ws05.batchid=ACCOUNT005
+resale.accounts.ws05.regrid=MVNOBATCH
+resale.accounts.ws05.remark=정산 데이터 - 정액료(RS)(후불)
+resale.accounts.ws05.filename=WS05.CJHV.FILEDATE.A.DAT
+resale.accounts.ws06.batchid=ACCOUNT006
+resale.accounts.ws06.regrid=MVNOBATCH
+resale.accounts.ws06.remark=정산 데이터 - 인프라이용대가(RS)(후불)
+resale.accounts.ws06.filename=WS06.CJHV.FILEDATE.A.DAT
+resale.accounts.ws07.batchid=ACCOUNT007
+resale.accounts.ws07.regrid=MVNOBATCH
+resale.accounts.ws07.remark=정산 데이터 - 초과분(RS)/T map(RS)/무제한대가(RS)(후불)
+resale.accounts.ws07.filename=WS07.CJHV.FILEDATE.A.DAT
+
+#소액결제청구 자료
+resale.smallpay.file.input.directory=/MVNO/REV/BS03/REV
+resale.smallpay.file.backup.directory=/MVNO/REV/BACKUP/BS03
+resale.smallpay.bs03rpe.batchid=SMPAY001
+resale.smallpay.bs03rpe.regrid=MVNOBATCH
+resale.smallpay.bs03rpe.remark=소액결제 과금 오류자료
+resale.smallpay.bs03rpe.filename=BS03.CJHV.FILEDATE.RPE.DAT
+resale.smallpay.bs03rpd.batchid=SMPAY002
+resale.smallpay.bs03rpd.regrid=MVNOBATCH
+resale.smallpay.bs03rpd.remark=소액결제 청구결과자료
+resale.smallpay.bs03rpd.filename=BS03.CJHV.FILEDATE.RPD.DAT
+
+#KT OPEN API 인증서 파일 위치 정보 및 CallBack URL
+ktCertificate =  /openapi/kt/Certificate
+ktCertificateCe =  /openapi/kt/Certificate/MVNO/CJHELLO(CJM)
+ktCertificateOst = /openapi/kt/Certificate/MVNO(OST)/CJHELLO(CJM)
+ktCertificateTb =  /openapi/kt/Certificate/MVNO(TB)/CJHELLO(CJM)
+ktReruenCallBack = HTTP://localhost/kt/openapi/KtOpenApiController.req
+
+#SKT 재판매 - 할인대상 정보 송신 전문
+resale.discount.Target.host=10.10.10.46
+resale.discount.Target.port=21
+resale.discount.Target.user=cjm
+resale.discount.Target.password=ftpcandym!
+resale.discount.Target.file.remoteDir=/BS01/SEN
+#resale.discount.Target.file.path=D:/LOCAL_TEST
+resale.discount.Target.file.path=/HVMVNO/dev/commoninfraDev/WebContent/share/infra/skt/bs01
+resale.discount.Target.fileName=BS01.CJHV.{0}.RG0.DAT
+
+#KAIT 부정가입방지 대량(내국인,사업자) 일괄검증 2016.01.14 김진양
+kait.identvfy.sftp.localDirReq=C:/KAIT/REQ/
+kait.identvfy.sftp.localDirRev=C:/KAIT/REV/
+kait.identvfy.sftp.host=10.10.10.46
+kait.identvfy.sftp.port=22
+kait.identvfy.sftp.userName=weblogic
+kait.identvfy.sftp.password=webmvno2!
+kait.identvfy.sftp.remoteDirPut=/home/weblogic/tmp/{0}/putrq/
+kait.identvfy.sftp.remoteDirGet=/home/weblogic/tmp/{0}/getrp/
+
+# Telenix FTP 연동
+telenix.ftp.host=52.32.211.29
+telenix.ftp.port=25000
+telenix.ftp.user=aluser1
+telenix.ftp.password=audiolog$5
+telenix.ftp.remoteDir=.
+telenix.ftp.localDir=/HVMVNO/dev/ftpFile/telenix

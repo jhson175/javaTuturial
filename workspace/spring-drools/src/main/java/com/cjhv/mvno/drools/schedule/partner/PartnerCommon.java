@@ -80,7 +80,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import unet.trustnet.app.*;
 
 public class PartnerCommon {
 
@@ -623,69 +622,9 @@ public class PartnerCommon {
 		return mapReturn;		
 	}
 	
-	/**
-	 * 하나은행 Encoding
-	 * paramStr : 일반 문자열	 
-	 * encHanaStr : 하나은행 Encoding된 문자열
-	 * @return
-	 * @throws Exception
-	 */
-	public String getEncHanaStr(String paramStr) throws Exception
-	{
-		String encHanaStr = "";	
-		logger.debug("암호화를 시작합니다.");
-		logger.debug("syncId::"+syncId);
-		logger.debug("paramStr::"+paramStr);
-		
-		try{
-			UnetEncryption unet = UnetEncryption.getInstance(); 		            
-		    logger.debug("paramStr:::::::"+paramStr);	        
-		    encHanaStr = unet.symmKeyEncipher( syncId, paramStr);
-		    logger.debug("encHanaStr:::::::"+encHanaStr);			   
-        } catch (ParseException e) {			
-			e.printStackTrace();
-			
-		} catch (Exception e) {			   
-			e.printStackTrace();			
-		}	
-		//logger.debug("encHanaStr:"+encHanaStr);
-		logger.debug("암호화를 종료합니다.");
-		return encHanaStr;		
-	}
+
 	
-	/**
-	 * 하나은행 Decoding
-	 * paramStr : 하나은행 Encoding된 문자열	 
-	 * resultStr : 일반 문자열
-	 * @return
-	 * @throws Exception
-	 */
-	public String getDecHanaStr(String encHanaStr) throws Exception
-	{
-		String resultStr = "";	
-		logger.debug("복호화를 시작합니다.");
-		//logger.debug("syncId::"+syncId);
-		//logger.debug("encHanaStr::"+encHanaStr);	
-		try{
-			UnetDecryption unet = UnetDecryption.getInstance();
-			
-			//logger.debug("before encHanaStr:::::::"+encHanaStr);	 
-		    resultStr = unet.symmKeyDecipher(syncId,encHanaStr);
-		    //logger.debug("after resultStr:::::::"+resultStr);		    
-		    //String bbb ="rn7WZk6H0G/2bWSZEDiCcctXDxy5cAaplukIBQQGlw3oH8Ldx4Xzl8a656ovuloS/o3uZWllWIwf9sTf+1DEFw==";
-		    //logger.debug("bbb :::::::"+bbb);
-		    //logger.debug("bbb dec:::::::"+unet.symmKeyDecipher(syncId,bbb));
-        } catch (ParseException e) {			
-			e.printStackTrace();
-			
-		} catch (Exception e) {			   
-			e.printStackTrace();			
-		}	
-		//logger.debug("resultStr:"+resultStr);
-		logger.debug("복호화를 종료합니다.");
-		return resultStr;		
-	}
-	
+
 	
 	/**
 	 * 하나은행 신청서번호를 인자로 계좌정보 가져옴
@@ -707,7 +646,7 @@ public class PartnerCommon {
 		
 		try{    		
 			logger.debug("FINAL_PARAM::::" + paramStr);
-			String encStr = getEncHanaStr(paramStr);
+			String encStr = ""; //getEncHanaStr(paramStr);
     		encStr = URLEncoder.encode(encStr, "utf-8");
     		String parameters = "encData="+encStr;   		
     		logger.debug("FINAL_ENC::::" + parameters);
@@ -719,7 +658,7 @@ public class PartnerCommon {
     		logger.debug("resultHm::"+tmpRresultHm);
     		String encData = (String)tmpRresultHm.get("encData");
     		//복호화
-    		responseResult = getDecHanaStr(encData);
+    		//responseResult = getDecHanaStr(encData);
     		//디코딩
     		responseResult = URLDecoder.decode(responseResult, "UTF-8");
     		
@@ -1389,7 +1328,7 @@ public class PartnerCommon {
 		*/
 		try{	
 			logger.debug("FINAL_PARAM::::" + paramStr);
-    		String encStr = getEncHanaStr(paramStr);
+    		String encStr = ""; //getEncHanaStr(paramStr);
     		String encodeURI = URLEncoder.encode(encStr, "utf-8");
     		String parameters = "encData="+encodeURI;    			
 
@@ -1404,7 +1343,7 @@ public class PartnerCommon {
     		logger.debug("resultHm::"+tmpRresultHm);
     		String encData = (String)tmpRresultHm.get("encData");
     		//복호화
-    		responseResult = getDecHanaStr(encData);
+    		//responseResult = getDecHanaStr(encData);
     		//디코딩
     		String decData = URLDecoder.decode(responseResult, "UTF-8");
     		

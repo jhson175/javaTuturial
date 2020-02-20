@@ -27,8 +27,6 @@ import org.springframework.beans.factory.InitializingBean;
 import util.KnowledgeSessionHelper;
 
 import com.cjhv.mvno.drools.ObInfo;
-import com.cjhv.mvno.framework.exception.ServiceException;
-import com.cjhv.mvno.framework.jdbc.SqlIBatisClient;
 import com.sample.DroolsTest.Message;
 
 public class OBObjDataSchedule implements  Tasklet, InitializingBean {
@@ -38,7 +36,6 @@ public class OBObjDataSchedule implements  Tasklet, InitializingBean {
     KieSession sessionStatefull = null;
     private EntryPoint tickStream;
     
-	private SqlIBatisClient generalDao;
 	private final transient Log logger = LogFactory.getLog(getClass());  
 	
 	/**
@@ -47,15 +44,7 @@ public class OBObjDataSchedule implements  Tasklet, InitializingBean {
 	public OBObjDataSchedule()
 	{
 		logger.debug("[Date]: " +System.currentTimeMillis()+ ", CtrtApprObjDataSchedule Started.." );
-		kieContainer = KnowledgeSessionHelper.createRuleBase();
-	}
-	
-	public SqlIBatisClient getGeneralDao() {
-		return generalDao;
-	}
-	
-	public void setGeneralDao(SqlIBatisClient generalDao) {
-		this.generalDao = generalDao;
+		//kieContainer = KnowledgeSessionHelper.createRuleBase();
 	}
 	
     @Override
@@ -72,10 +61,7 @@ public class OBObjDataSchedule implements  Tasklet, InitializingBean {
 		Map<String, String> param = new HashMap<String,String>();
 		param.put("ORDER_NO", "OB00947730");
 		
-		List<HashMap> obInfoList = (List<HashMap>) getGeneralDao().queryForList("ob.on.common.getOnineOBInfo", param); 
-
-        logger.debug("OBINFO LIST CNT " + obInfoList.size());
-        /*
+		/*
         for(Object obj : obInfoList ) {
         	Map<String,String> getMap = (Map<String,String>)obj;
         	logger.debug(getMap.get("ORDER_NO"));

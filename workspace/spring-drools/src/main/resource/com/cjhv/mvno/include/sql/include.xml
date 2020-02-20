@@ -3,7 +3,7 @@
 <sqlMap namespace="bt.in.include">
 
     <sql id="test">
-        1 = 1
+       1 = 1
     </sql>
 
 </sqlMap>

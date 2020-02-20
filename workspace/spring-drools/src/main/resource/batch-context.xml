@@ -11,7 +11,7 @@
         p:jobLauncher-ref="jobLauncher" p:jobExplorer-ref="jobExplorer" p:jobRepository-ref="jobRepository"
         p:jobRegistry-ref="jobRegistry" />
 
-    <bean id="jobExplorer" class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean"
+     <bean id="jobExplorer" class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean"
         p:dataSource-ref="dataSource" />
 
     <bean id="jobRegistry" class="org.springframework.batch.core.configuration.support.MapJobRegistry" />
@@ -22,13 +22,22 @@
     <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher"
         p:jobRepository-ref="jobRepository" />
 
-    <bean id="jobRepository" class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean"
+     <bean id="jobRepository" class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean"
         p:dataSource-ref="dataSource" p:transactionManager-ref="transactionManager" p:isolationLevelForCreate="ISOLATION_READ_COMMITTED"
         p:tablePrefix="BATCH_" />
 
-    
+<!--     
     <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" p:driverClassName="#{props['champ.jdbc.driver']}"
         p:url="#{props['champ.jdbc.url']}" p:username="#{props['champ.jdbc.user']}" p:password="#{props['champ.jdbc.password']}" />
+        
+ -->
+    <!-- MySQL dataSource -->
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource"> 
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/> 
+        <property name="url" value="jdbc:mysql://192.168.108.128:3306/invo"/> 
+        <property name="username" value="root"/> 
+        <property name="password" value="??kwak091126"/>
+    </bean>        
 
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
         p:dataSource-ref="dataSource" lazy-init="true" />
@@ -44,8 +53,6 @@
         </property>
     </bean>
     
-    <bean id="generalDao" class="com.cjhv.mvno.framework.jdbc.SqlIBatisClient" p:sqlMapClient-ref="sqlMapClient" />
+   
     
-    <!-- KtSmsBizCommon Query Manager 2015.09.24 HSY ADD ****--> 
-    <bean id="KtSmsBizCommon" class="com.cjhv.mvno.drools.common.ktbiz.KtSmsBizCommon" p:generalDao-ref="generalDao" />    
 </beans>

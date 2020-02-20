@@ -18,10 +18,12 @@ public class PartnerInquiryHanaScheduleTest {
 		System.out.println("Properties -=-==> " + prop.getProperty("trustnet.home"));
     	ApplicationContext appContext = new ClassPathXmlApplicationContext("/job/partner/PartnerInquiryHanaSchedule-job.xml");
     	
+    	System.out.println("1");
     	PartnerInquiryHanaSchedule cj = (PartnerInquiryHanaSchedule)appContext.getBean("PartnerInquiryHanaSchedule");
 //    	AcctInquiryHanaSchedule cj = (AcctInquiryHanaSchedule)appContext.getBean("AcctInquiryHanaScheduleManual");
    	
-    	
+    	System.out.println("TEST MAIN");
+    	System.exit(1);
     	try{
     	      cj.execute(null,null);
 

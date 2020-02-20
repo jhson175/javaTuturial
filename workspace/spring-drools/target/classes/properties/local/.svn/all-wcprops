@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/infra/!svn/ver/63399/mvno-batch/src/main/resources/properties/local
+END
+batch.properties.oracle
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/infra/!svn/ver/45586/mvno-batch/src/main/resources/properties/local/batch.properties.oracle
+END
+batch.properties
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/infra/!svn/ver/63399/mvno-batch/src/main/resources/properties/local/batch.properties
+END

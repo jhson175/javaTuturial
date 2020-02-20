@@ -9,12 +9,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
-import com.cjhv.mvno.framework.exception.ServiceException;
-
 public class DateUtil
 {
     public static void main( String args[] )
-        throws ServiceException
     {
         System.out.println( "getAddDays::" + getAddDays( 0 ) );
         System.out.println( "getAddDays::" + getAddDays( -2 ) );

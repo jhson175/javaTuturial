@@ -20,13 +20,16 @@ public class OBInfoObjDataScheduleTest
     public static void main( String[] args )
     {
     	
+    	System.out.println("START");
         Logger logger = LoggerFactory.getLogger(OBInfoObjDataScheduleTest.class.getName());
-        
+        System.out.println("START01");
     	ApplicationContext appContext = new ClassPathXmlApplicationContext("/job/OBInfoObjDataSchedule-job.xml");
-
+    	System.out.println("START1");
     	// 테스트
     	OBObjDataSchedule cj = (OBObjDataSchedule)appContext.getBean("obInfoObjDataScheduleTest");
 
+    	
+    	System.out.println("START");
 		try{
     		cj.execute(null,null);
     	
