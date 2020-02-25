@@ -10,19 +10,28 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.schedule.DataSchedule;
 
-public class testScheduleTest 
+abstract class testScheduleTest 
 {
     /**
      * @param args
      */
     public static void main( String[] args )
     {
-    	
     	System.out.println("START");
         Logger logger = LoggerFactory.getLogger(testScheduleTest.class.getName());
         System.out.println("START01");
+        
+        System.out.println("SS".equals(new String("SS")));
+        System.out.println(new String("GG") == new String("GG"));
+        
+        boolean sizeT;
+        
+        
+        System.exit(1);
     	ApplicationContext appContext = new ClassPathXmlApplicationContext("/job/Schedule-job.xml");
     	System.out.println("START1");
+    	
+    	
     	// 테스트
     	DataSchedule schedule = (DataSchedule)appContext.getBean("ScheduleTest");
 
